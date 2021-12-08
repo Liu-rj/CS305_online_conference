@@ -110,8 +110,8 @@ class Client(object):
             self.audio_sock.room_id = self.room_id
             time.sleep(5)
             self.video_sharing()
-            self.video_receiving()
-            self.audio_sharing()
+            # self.video_receiving()
+            # self.audio_sharing()
             self.audio_receiving()
         else:
             pass
@@ -127,7 +127,7 @@ class Client(object):
             self.audio_sock.room_id = self.room_id
             self.video_receiving()
             self.audio_sharing()
-            self.audio_receiving()
+            # self.audio_receiving()
         else:
             return False
 
@@ -138,7 +138,7 @@ if __name__ == "__main__":
     status = client.login()
     if status:
         print('successfully login!')
-        client.create_meeting()
+        client.join_meeting(0)
     while True:
         time.sleep(1)
         if not client.is_alive:
