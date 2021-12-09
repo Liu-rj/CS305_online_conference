@@ -43,6 +43,7 @@ class Client(object):
         self.sock = ClientSocket((XXIP, XXPORT))
         self.video_sock = VideoSock((XXIP, XXVIDEOPORT))
         self.audio_sock = AudioSock((XXIP, XXAUDIOPORT))
+        self.screen_sock = ScreenSock((XXIP,XXSCREEENPORT))
         # Here we define two variables for CIL menu
         self.state = MAIN
         self.changed = True
@@ -99,6 +100,12 @@ class Client(object):
     def audio_receiving(self):
         self.audio_sock.receive_audio.start()
 
+    def screen_sharing(self):
+        self.screen_sock.share_screen().start()
+
+    def screen_receiving(self):
+        self.screen_sock.receive_screen().start()
+
     def create_meeting(self):
         header = b'create room'
         data = b''
@@ -108,11 +115,14 @@ class Client(object):
             self.room_id = int(data.split(' ')[1])
             self.video_sock.room_id = self.room_id
             self.audio_sock.room_id = self.room_id
+            self.screen_sock.room_id = self.room_id
             time.sleep(5)
             self.video_sharing()
             # self.video_receiving()
             # self.audio_sharing()
             self.audio_receiving()
+            # self.screen_sharing()
+            # self.screen_receiving()
         else:
             pass
 
@@ -125,9 +135,12 @@ class Client(object):
             self.room_id = int(data.split(' ')[1])
             self.video_sock.room_id = self.room_id
             self.audio_sock.room_id = self.room_id
+            self.screen_sock.room_id = self.room_id
             self.video_receiving()
             self.audio_sharing()
             # self.audio_receiving()
+            # self.screen_sharing()
+            # self.screen_receiving()
         else:
             return False
 

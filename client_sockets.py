@@ -1,10 +1,16 @@
 import socket
 import threading
+import tkinter
+
 import cv2
 import struct
 import pickle
 import zlib
+
+import numpy as np
 import pyaudio
+from PIL import ImageGrab, ImageTk
+from PIL.Image import Image
 
 '''
     We provide a base class here.
@@ -51,13 +57,13 @@ class ClientSocket(object):
         data = raw_data[1]
         return header, data
 
-    def analyze_receive_data(self, header, data):
-        """
-            Analyze the received data
-            You can also combine this function within
-            the "receive_server_data", so you can ignore this function
-        """
-        pass
+    # def analyze_receive_data(self, header, data):
+    #     """
+    #         Analyze the received data
+    #         You can also combine this function within
+    #         the "receive_server_data", so you can ignore this function
+    #     """
+    #     pass
 
     def send_data(self, header, data):
         """
@@ -68,14 +74,14 @@ class ClientSocket(object):
         pack = header + b'\r\n\r\n' + data
         self.sock.sendall(pack)
 
-    def construct_sending_data(self, *args):
-        """
-            Construct the sending data
-            @Returns
-                header: The header of the msg
-                data: The data of the msg
-        """
-        pass
+    # def construct_sending_data(self, *args):
+    #     """
+    #         Construct the sending data
+    #         @Returns
+    #             header: The header of the msg
+    #             data: The data of the msg
+    #     """
+    #     pass
 
 
 def receive_data(sock):
@@ -248,4 +254,136 @@ class AudioSock(object):
                 frames = pickle.loads(frame_data)
                 for frame in frames:
                     self.out_stream.write(frame, CHUNK)
+        sock.close()
+
+class ScreenSock(object):
+    def __init__(self, server):
+        self.server = server
+        self.room_id = None
+        self.img = None
+        self.imbyt = None
+        self.showcan = None
+        self.bufsize = 10240# socket缓冲区大小
+        self.IMQUALITY = 50# 压缩比 1-100 数值越小，压缩比越高，图片质量损失越严重
+        self.share_screen = threading.Thread(target=self.share_screen)
+        self.share_screen.setDaemon(True)
+        self.receive_screen = threading.Thread(target=self.receive_screen)
+        self.receive_screen.setDaemon(True)
+
+    def __del__(self):
+        if self.showcan is not None:
+            self.showcan.destroy()
+        pass
+
+    def share_screen(self):
+        print("SCREEN sender starts...")
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        while True:
+            try:
+                sock.connect(self.server)
+                break
+            except:
+                print("Could not connect to the server" + str(self.server))
+        if self.imbyt is None:
+            imorg = np.asarray(ImageGrab.grab())
+            _, self.imbyt = cv2.imencode(".jpg", imorg, [cv2.IMWRITE_JPEG_QUALITY, self.IMQUALITY])
+            imnp = np.asarray(self.imbyt, np.uint8)
+            self.img = cv2.imdecode(imnp, cv2.IMREAD_COLOR)
+        lenb = struct.pack(">BI", 1, len(self.imbyt))
+        sock.sendall(lenb)
+        sock.sendall(self.imbyt)
+        while True:
+            cv2.waitKey(100)
+            gb = ImageGrab.grab()
+            imgnpn = np.asarray(gb)
+            _, timbyt = cv2.imencode(".jpg", imgnpn, [cv2.IMWRITE_JPEG_QUALITY, self.IMQUALITY])
+            self.imnp = np.asarray(timbyt, np.uint8)
+            imgnew = cv2.imdecode(self.imnp, cv2.IMREAD_COLOR)
+            # 计算图像差值
+            imgs = imgnew - self.img
+            if (imgs != 0).any():
+                # 画质改变
+                pass
+            else:
+                continue
+            self.imbyt = timbyt
+            self.img = imgnew
+            # 无损压缩
+            _, imb = cv2.imencode(".png", imgs)
+            l1 = len(self.imbyt)  # 原图像大小
+            l2 = len(imb)  # 差异图像大小
+            if l1 > l2:
+                # 传差异化图像
+                lenb = struct.pack(">BI", 0, l2)
+                sock.sendall(lenb)
+                sock.sendall(imb)
+            else:
+                # 传原编码图像
+                lenb = struct.pack(">BI", 1, l1)
+                sock.sendall(lenb)
+                sock.sendall(self.imbyt)
+        sock.close()
+
+    def receive_screen(self):
+        print("SCREEN receiver starts...")
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        while True:
+            try:
+                sock.connect(self.server)
+                break
+            except:
+                print("Could not connect to the server" + str(self.server))
+        send_data(sock, b'receive', 'roomId {}'.format(str(self.room_id)).encode())
+        lenb = sock.recv(5)
+        imtype, le = struct.unpack(">BI", lenb)
+        imb = b''
+        while le > self.bufsize:
+            t = sock.recv(self.bufsize)
+            imb += t
+            le -= len(t)
+        while le > 0:
+            t = sock.recv(le)
+            imb += t
+            le -= len(t)
+        data = np.frombuffer(imb, dtype=np.uint8)
+        img = cv2.imdecode(data, cv2.IMREAD_COLOR)
+        h, w, _ = img.shape
+        fixh, fixw = h, w
+        imsh = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)
+        imi = Image.fromarray(imsh)
+        imgTK = ImageTk.PhotoImage(image=imi)
+        if self.showcan is None:
+            self.showcan = tkinter.Tk()
+        cv = tkinter.Canvas(self.showcan, width=w, height=h, bg="white")
+        cv.focus_set()
+        cv.pack()
+        cv.create_image(0, 0, anchor=tkinter.NW, image=imgTK)
+        while True:
+            try:
+                lenb = sock.recv(5)
+                imtype, le = struct.unpack(">BI", lenb)
+                imb = b''
+                while le > self.bufsize:
+                    t = sock.recv(self.bufsize)
+                    imb += t
+                    le -= len(t)
+                while le > 0:
+                    t = sock.recv(le)
+                    imb += t
+                    le -= len(t)
+                data = np.frombuffer(imb, dtype=np.uint8)
+                ims = cv2.imdecode(data, cv2.IMREAD_COLOR)
+                if imtype == 1:
+                    # 全传
+                    img = ims
+                else:
+                    # 差异传
+                    img = img + ims
+                imt = cv2.resize(img, (w, h))
+                imsh = cv2.cvtColor(imt, cv2.COLOR_RGB2RGBA)
+                imi = Image.fromarray(imsh)
+                imgTK.paste(imi)
+            except:
+                self.showcan = None
+                break
         sock.close()

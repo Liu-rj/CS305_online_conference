@@ -53,12 +53,22 @@ class Meeting(object):
         self.video_receiving = []
         self.audio_sharing = []
         self.audio_receiving = []
+        self.screen_sharing = []
+        self.screen_receiving = []
 
     def __del__(self):
         for video in self.video_sharing:
             video[0].close()
         for video in self.video_receiving:
             video[0].close()
+        for audio in self.audio_sharing:
+            audio[0].close()
+        for audio in self.audio_receiving:
+            audio[0].close()
+        for screen in self.screen_sharing:
+            screen[0].close()
+        for screen in self.screen_receiving:
+            screen[0].close()
         for client in self.clients:
             ServerSocket.clients[client].meeting = None
 
@@ -69,6 +79,9 @@ class Meeting(object):
         audio = threading.Thread(target=self.audio_forward)
         audio.setDaemon(True)
         audio.start()
+        screen = threading.Thread(target=self.screen_forward())
+        screen.setDaemon(True)
+        screen.start()
 
     def add_client(self, client):
         self.clients.append(client)
@@ -93,6 +106,15 @@ class Meeting(object):
                 except:
                     continue
 
+    def screen_forward(self):
+        while True:
+            for client in self.screen_sharing:
+                try:
+                    data = client[0].recv(81920)
+                    for other in self.screen_receiving:
+                        other[0].sendall(data)
+                except:
+                    continue
 
 class ServerSocket(threading.Thread):
     rooms = {}
