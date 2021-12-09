@@ -56,7 +56,7 @@ def audio_sock_listen():
 def screen_sock_listen():
     print('screen socket start listen...')
     audio_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    audio_sock.bind(('', XXAUDIOPORT))
+    audio_sock.bind(('', XXSCREEENPORT))
     audio_sock.listen(2)
     while True:
         sock, address = audio_sock.accept()
@@ -79,7 +79,7 @@ def main_sock_listen():
     video.setDaemon(True)
     audio = threading.Thread(target=audio_sock_listen)
     audio.setDaemon(True)
-    screen = threading.Thread(target=screen_sock_listen())
+    screen = threading.Thread(target=screen_sock_listen)
     screen.setDaemon(True)
     video.start()
     audio.start()
