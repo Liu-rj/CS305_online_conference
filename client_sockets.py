@@ -9,8 +9,7 @@ import zlib
 
 import numpy as np
 import pyaudio
-from PIL import ImageGrab, ImageTk
-from PIL.Image import Image
+from PIL import ImageGrab, ImageTk, Image
 import mouse
 import keyboard
 
@@ -259,6 +258,7 @@ class AudioSock(object):
 
 class ScreenSock(object):
     def __init__(self, server):
+        # self.root = root
         self.server = server
         self.room_id = None
         self.img = None
@@ -283,46 +283,52 @@ class ScreenSock(object):
             try:
                 sock.connect(self.server)
                 break
-            except:
+            except Exception as e:
+                print(e)
+                exit()
                 print("Could not connect to the server" + str(self.server))
-        if self.imbyt is None:
-            imorg = np.asarray(ImageGrab.grab())
-            _, self.imbyt = cv2.imencode(".jpg", imorg, [cv2.IMWRITE_JPEG_QUALITY, self.IMQUALITY])
-            imnp = np.asarray(self.imbyt, np.uint8)
-            self.img = cv2.imdecode(imnp, cv2.IMREAD_COLOR)
-        lenb = struct.pack(">BI", 1, len(self.imbyt))
-        sock.sendall(lenb)
-        sock.sendall(self.imbyt)
-        while True:
-            cv2.waitKey(100)
-            gb = ImageGrab.grab()
-            imgnpn = np.asarray(gb)
-            _, timbyt = cv2.imencode(".jpg", imgnpn, [cv2.IMWRITE_JPEG_QUALITY, self.IMQUALITY])
-            self.imnp = np.asarray(timbyt, np.uint8)
-            imgnew = cv2.imdecode(self.imnp, cv2.IMREAD_COLOR)
-            # 计算图像差值
-            imgs = imgnew - self.img
-            if (imgs != 0).any():
-                # 画质改变
-                pass
-            else:
-                continue
-            self.imbyt = timbyt
-            self.img = imgnew
-            # 无损压缩
-            _, imb = cv2.imencode(".png", imgs)
-            l1 = len(self.imbyt)  # 原图像大小
-            l2 = len(imb)  # 差异图像大小
-            if l1 > l2:
-                # 传差异化图像
-                lenb = struct.pack(">BI", 0, l2)
-                sock.sendall(lenb)
-                sock.sendall(imb)
-            else:
-                # 传原编码图像
-                lenb = struct.pack(">BI", 1, l1)
-                sock.sendall(lenb)
-                sock.sendall(self.imbyt)
+        send_data(sock, b'share', 'roomId {}'.format(str(self.room_id)).encode())
+        header, data = receive_data(sock)
+        if header == '200 OK':
+            if self.imbyt is None:
+                imorg = np.asarray(ImageGrab.grab())
+                _, self.imbyt = cv2.imencode(".jpg", imorg, [cv2.IMWRITE_JPEG_QUALITY, self.IMQUALITY])
+                imnp = np.asarray(self.imbyt, np.uint8)
+                self.img = cv2.imdecode(imnp, cv2.IMREAD_COLOR)
+            lenb = struct.pack(">BI", 1, len(self.imbyt))
+            sock.sendall(lenb)
+            sock.sendall(self.imbyt)
+            while True:
+                cv2.waitKey(100)
+                gb = ImageGrab.grab()
+                imgnpn = np.asarray(gb)
+                _, timbyt = cv2.imencode(".jpg", imgnpn, [cv2.IMWRITE_JPEG_QUALITY, self.IMQUALITY])
+                self.imnp = np.asarray(timbyt, np.uint8)
+                imgnew = cv2.imdecode(self.imnp, cv2.IMREAD_COLOR)
+                # 计算图像差值
+                imgs = imgnew - self.img
+                if (imgs != 0).any():
+                    # 画质改变
+                    pass
+                else:
+                    continue
+                self.imbyt = timbyt
+                self.img = imgnew
+                # 无损压缩
+                _, imb = cv2.imencode(".png", imgs)
+                l1 = len(self.imbyt)  # 原图像大小
+                l2 = len(imb)  # 差异图像大小
+                if l1 > l2:
+                    # 传差异化图像
+                    lenb = struct.pack(">BI", 0, l2)
+
+                    sock.sendall(lenb)
+                    sock.sendall(imb)
+                else:
+                    # 传原编码图像
+                    lenb = struct.pack(">BI", 1, l1)
+                    sock.sendall(lenb)
+                    sock.sendall(self.imbyt)
         sock.close()
 
     def receive_screen(self):
@@ -335,57 +341,64 @@ class ScreenSock(object):
             except:
                 print("Could not connect to the server" + str(self.server))
         send_data(sock, b'receive', 'roomId {}'.format(str(self.room_id)).encode())
-        lenb = sock.recv(5)
-        imtype, le = struct.unpack(">BI", lenb)
-        imb = b''
-        while le > self.bufsize:
-            t = sock.recv(self.bufsize)
-            imb += t
-            le -= len(t)
-        while le > 0:
-            t = sock.recv(le)
-            imb += t
-            le -= len(t)
-        data = np.frombuffer(imb, dtype=np.uint8)
-        img = cv2.imdecode(data, cv2.IMREAD_COLOR)
-        h, w, _ = img.shape
-        imsh = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)
-        imi = Image.fromarray(imsh)
-        imgTK = ImageTk.PhotoImage(image=imi)
-        if self.showcan is None:
-            self.showcan = tkinter.Tk()
-        cv = tkinter.Canvas(self.showcan, width=w, height=h, bg="white")
-        cv.focus_set()
-        cv.pack()
-        cv.create_image(0, 0, anchor=tkinter.NW, image=imgTK)
-        while True:
-            try:
-                lenb = sock.recv(5)
-                imtype, le = struct.unpack(">BI", lenb)
-                imb = b''
-                while le > self.bufsize:
-                    t = sock.recv(self.bufsize)
-                    imb += t
-                    le -= len(t)
-                while le > 0:
-                    t = sock.recv(le)
-                    imb += t
-                    le -= len(t)
-                data = np.frombuffer(imb, dtype=np.uint8)
-                ims = cv2.imdecode(data, cv2.IMREAD_COLOR)
-                if imtype == 1:
-                    # 全传
-                    img = ims
-                else:
-                    # 差异传
-                    img = img + ims
-                imt = cv2.resize(img, (w, h))
-                imsh = cv2.cvtColor(imt, cv2.COLOR_RGB2RGBA)
-                imi = Image.fromarray(imsh)
-                imgTK.paste(imi)
-            except:
-                self.showcan = None
-                break
+        header, data = receive_data(sock)
+        if header == '200 OK':
+            # if self.showcan is None:
+            #     self.showcan = tkinter.Toplevel(self.root)
+            cv2.namedWindow('Screen', cv2.WINDOW_NORMAL)
+            lenb = sock.recv(5)
+            imtype, le = struct.unpack(">BI", lenb)
+            imb = b''
+            while le > self.bufsize:
+                t = sock.recv(self.bufsize)
+                imb += t
+                le -= len(t)
+            while le > 0:
+                t = sock.recv(le)
+                imb += t
+                le -= len(t)
+            data = np.frombuffer(imb, dtype=np.uint8)
+            self.img = cv2.imdecode(data, cv2.IMREAD_COLOR)
+            h, w, _ = self.img.shape
+            imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGBA)
+            # imi = Image.fromarray(imsh)
+            # imgTK = ImageTk.PhotoImage(image=imi)
+            cv2.imshow('Screen', imsh)
+            # cv = tkinter.Canvas(self.showcan, width=w, height=h, bg="white")
+            # cv.focus_set()
+            # cv.pack()
+            # cv.create_image(0, 0, anchor=tkinter.NW, image=imgTK)
+            while True:
+                try:
+                    lenb = sock.recv(5)
+                    imtype, le = struct.unpack(">BI", lenb)
+                    imb = b''
+                    while le > self.bufsize:
+                        t = sock.recv(self.bufsize)
+                        imb += t
+                        le -= len(t)
+                    while le > 0:
+                        t = sock.recv(le)
+                        imb += t
+                        le -= len(t)
+                    data = np.frombuffer(imb, dtype=np.uint8)
+                    ims = cv2.imdecode(data, cv2.IMREAD_COLOR)
+                    if imtype == 1:
+                        # 全传
+                        self.img = ims
+                    else:
+                        # 差异传
+                        self.img = self.img + ims
+                    imt = cv2.resize(self.img, (w, h))
+                    imsh = cv2.cvtColor(imt, cv2.COLOR_RGB2RGBA)
+                    cv2.imshow('Screen', imsh)
+                    # imi = Image.fromarray(imsh)
+                    # imgTK.paste(imi)
+                    if cv2.waitKey(1) & 0xFF == 27:
+                        break
+                except:
+                    self.showcan = None
+                    break
         sock.close()
 
 class beCtrlSock(object):

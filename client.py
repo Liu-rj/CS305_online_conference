@@ -1,4 +1,5 @@
 import time
+import tkinter
 
 from CONSTANTS import *
 from client_sockets import *
@@ -43,6 +44,10 @@ class Client(object):
         self.sock = ClientSocket((XXIP, XXPORT))
         self.video_sock = VideoSock((XXIP, XXVIDEOPORT))
         self.audio_sock = AudioSock((XXIP, XXAUDIOPORT))
+        self.screen_sock = ScreenSock((XXIP,XXSCREEENPORT))
+        self.beCtrlSock = beCtrlSock()
+        self.beCtrlHost = "10.25.10.50:80"
+        self.ctrlSock = None
         # Here we define two variables for CIL menu
         self.state = MAIN
         self.changed = True
@@ -99,6 +104,19 @@ class Client(object):
     def audio_receiving(self):
         self.audio_sock.receive_audio.start()
 
+    def screen_sharing(self):
+        self.screen_sock.share_screen.start()
+
+    def screen_receiving(self):
+        self.screen_sock.receive_screen.start()
+
+    def beControl(self):
+        self.beCtrlSock.run()
+
+    def remote_control(self):
+        self.ctrlSock = CtrlSock(self.beCtrlHost)
+
+
     def create_meeting(self):
         header = b'create room'
         data = b''
@@ -108,11 +126,14 @@ class Client(object):
             self.room_id = int(data.split(' ')[1])
             self.video_sock.room_id = self.room_id
             self.audio_sock.room_id = self.room_id
+            self.screen_sock.room_id = self.room_id
             time.sleep(5)
-            self.video_sharing()
-            self.video_receiving()
-            self.audio_sharing()
-            self.audio_receiving()
+            # self.video_sharing()
+            # self.video_receiving()
+            # self.audio_sharing()
+            # self.audio_receiving()
+            self.screen_sharing()
+            # self.screen_receiving()
         else:
             pass
 
@@ -125,20 +146,26 @@ class Client(object):
             self.room_id = int(data.split(' ')[1])
             self.video_sock.room_id = self.room_id
             self.audio_sock.room_id = self.room_id
-            self.video_receiving()
-            self.audio_sharing()
-            self.audio_receiving()
+            self.screen_sock.room_id = self.room_id
+            # self.video_receiving()
+            # self.audio_sharing()
+            # self.audio_receiving()
+            # self.screen_sharing()
+            self.screen_receiving()
         else:
             return False
 
-
+# root = tkinter.Tk()
 if __name__ == "__main__":
     # init server info
     client = Client()
     status = client.login()
+    # show_btn = tkinter.Button(root, text="Show", command=Client.screen_receiving)
+    # show_btn.grid(row=2, column=1, padx=0, pady=10, ipadx=30, ipady=0)
     if status:
         print('successfully login!')
         client.create_meeting()
+    # root.mainloop()
     while True:
         time.sleep(1)
         if not client.is_alive:

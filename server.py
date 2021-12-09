@@ -55,20 +55,20 @@ def audio_sock_listen():
 
 def screen_sock_listen():
     print('screen socket start listen...')
-    audio_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    audio_sock.bind(('', XXSCREEENPORT))
-    audio_sock.listen(2)
+    screen_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    screen_sock.bind(('', XXSCREEENPORT))
+    screen_sock.listen(2)
     while True:
-        sock, address = audio_sock.accept()
+        sock, address = screen_sock.accept()
         header, data, _ = receive_data(sock)
         room_id = int(data.split(' ')[1])
         if room_id in ServerSocket.rooms.keys():
             print('new screen client connect: {} to room {}, action: {}'.format(address, str(room_id), header))
             with shared_lock:
                 if header == 'share':
-                    ServerSocket.rooms[room_id].audio_sharing.append((sock, address))
+                    ServerSocket.rooms[room_id].screen_sharing.append((sock, address))
                 elif header == 'receive':
-                    ServerSocket.rooms[room_id].audio_receiving.append((sock, address))
+                    ServerSocket.rooms[room_id].screen_receiving.append((sock, address))
             sock.send(b'200 OK\r\n\r\n ')
         else:  # TODO: if join a non-existing room, what should we do?
             pass

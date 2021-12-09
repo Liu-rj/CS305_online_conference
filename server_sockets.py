@@ -79,7 +79,7 @@ class Meeting(object):
         audio = threading.Thread(target=self.audio_forward)
         audio.setDaemon(True)
         audio.start()
-        screen = threading.Thread(target=self.screen_forward())
+        screen = threading.Thread(target=self.screen_forward)
         screen.setDaemon(True)
         screen.start()
 
