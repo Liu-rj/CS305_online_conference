@@ -44,6 +44,9 @@ class Client(object):
         self.video_sock = VideoSock((XXIP, XXVIDEOPORT))
         self.audio_sock = AudioSock((XXIP, XXAUDIOPORT))
         self.screen_sock = ScreenSock((XXIP,XXSCREEENPORT))
+        self.beCtrlSock = beCtrlSock()
+        self.beCtrlHost = "127.0.0.1:80"
+        self.ctrlSock = None
         # Here we define two variables for CIL menu
         self.state = MAIN
         self.changed = True
@@ -105,6 +108,13 @@ class Client(object):
 
     def screen_receiving(self):
         self.screen_sock.receive_screen().start()
+
+    def beControl(self):
+        self.beCtrlSock.run()
+
+    def remote_control(self):
+        self.ctrlSock = CtrlSock(self.beCtrlHost)
+
 
     def create_meeting(self):
         header = b'create room'
