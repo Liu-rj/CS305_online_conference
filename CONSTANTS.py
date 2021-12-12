@@ -12,7 +12,7 @@ MAIN = 1
 MEETING = 2
 
 # Server IP
-XXIP = '127.0.0.1'
+XXIP = '10.26.139.226'
 
 # Server ports
 XXPORT = 5000

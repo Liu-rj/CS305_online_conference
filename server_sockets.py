@@ -79,6 +79,9 @@ class Meeting(object):
             for client in self.video_sharing:
                 try:
                     data = client[0].recv(81920)
+                    if data == '':
+                        self.video_sharing.remove(client)
+                        continue
                     for other in self.video_receiving:
                         other[0].sendall(data)
                 except:
@@ -89,6 +92,9 @@ class Meeting(object):
             for client in self.audio_sharing:
                 try:
                     data = client[0].recv(81920)
+                    if data == '':
+                        self.audio_sharing.remove(client)
+                        continue
                     for other in self.audio_receiving:
                         if other[1][0] == client[1][0]:
                             continue
@@ -101,7 +107,12 @@ class Meeting(object):
             for client in self.screen_sharing:
                 try:
                     data = client[0].recv(81920)
+                    if data == '':
+                        self.screen_sharing.remove(client)
+                        continue
                     for other in self.screen_receiving:
+                        if other[1][0] == client[1][0]:
+                            continue
                         other[0].sendall(data)
                 except:
                     continue

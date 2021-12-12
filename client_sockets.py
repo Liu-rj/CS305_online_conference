@@ -110,11 +110,14 @@ class VideoSock(object):
         self.share_video.setDaemon(True)
         self.receive_video = threading.Thread(target=self.receive_video)
         self.receive_video.setDaemon(True)
+        self.sharing = False
+        self.receiving = False
 
     def __del__(self):
         self.cap.release()
 
     def share_video(self):
+        self.sharing = True
         print("VIDEO sender starts...")
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         while True:
@@ -126,7 +129,7 @@ class VideoSock(object):
         send_data(sock, b'share', 'roomId {}'.format(str(self.room_id)).encode())
         header, data = receive_data(sock)
         if header == '200 OK':
-            while self.cap.isOpened():
+            while self.sharing and self.cap.isOpened():
                 ret, frame = self.cap.read()
                 sframe = cv2.resize(frame, (0, 0), fx=self.fx, fy=self.fx)
                 data = pickle.dumps(sframe)
@@ -140,6 +143,7 @@ class VideoSock(object):
         sock.close()
 
     def receive_video(self):
+        self.receiving = True
         print("VIDEO receiver starts...")
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         while True:
@@ -153,8 +157,7 @@ class VideoSock(object):
         if header == '200 OK':
             data = "".encode("utf-8")
             payload_size = struct.calcsize("L")
-            cv2.namedWindow('Remote', cv2.WINDOW_NORMAL)
-            while True:
+            while self.receiving:
                 while len(data) < payload_size:
                     data += sock.recv(81920)
                 packed_size = data[:payload_size]
@@ -166,6 +169,7 @@ class VideoSock(object):
                 data = data[msg_size:]
                 frame_data = zlib.decompress(zframe_data)
                 frame = pickle.loads(frame_data)
+                cv2.namedWindow('Remote', cv2.WINDOW_NORMAL)
                 cv2.imshow('Remote', frame)
                 if cv2.waitKey(1) & 0xFF == 27:
                     break
@@ -183,6 +187,8 @@ class AudioSock(object):
         self.share_audio.setDaemon(True)
         self.receive_audio = threading.Thread(target=self.receive_audio)
         self.receive_audio.setDaemon(True)
+        self.sharing = False
+        self.receiving = False
 
     def __del__(self):
         if self.out_stream is not None:
@@ -194,6 +200,7 @@ class AudioSock(object):
         self.p.terminate()
 
     def share_audio(self):
+        self.sharing = True
         print("AUDIO sender starts...")
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         while True:
@@ -210,7 +217,7 @@ class AudioSock(object):
                                          rate=RATE,
                                          input=True,
                                          frames_per_buffer=CHUNK)
-            while self.in_stream.is_active():
+            while self.sharing and self.in_stream.is_active():
                 frames = []
                 for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
                     data = self.in_stream.read(CHUNK)
@@ -223,6 +230,7 @@ class AudioSock(object):
         sock.close()
 
     def receive_audio(self):
+        self.receiving = True
         print("AUDIO receiver starts...")
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         while True:
@@ -242,7 +250,7 @@ class AudioSock(object):
                                           output=True,
                                           frames_per_buffer=CHUNK
                                           )
-            while True:
+            while self.receiving:
                 while len(data) < payload_size:
                     data += sock.recv(81920)
                 packed_size = data[:payload_size]

@@ -76,13 +76,9 @@ class Stats():
                                        "background-color: yellow;"
                                        "selection-color: yellow;"
                                        "selection-background-color: blue;")
-        self.join_window.setFixedSize(QSize(300, 50))
+        self.join_window.setFixedSize(QSize(400, 50))
         self.join_window.setWindowTitle('Join Meeting')
         self.join_window.setFont(QFont("Times New Roman", 18))
-        meeting_id = self.join_window.text()
-        if not self.client.join_meeting(meeting_id):
-            # TODO: add pop up
-            pass
         self.join_window.returnPressed.connect(self.on_join)
         self.join_window.show()
 
@@ -100,6 +96,7 @@ class Stats():
         self.voice_button.setStyleSheet("QToolButton{border:none;color:rgb(0, 0, 0);}"
                                         "QToolButton:hover{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}"
                                         "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
+        self.client.audio_sharing()
 
         self.video_button = QToolButton(self.meeting_window)
         self.video_button.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
@@ -169,6 +166,10 @@ class Stats():
                                        "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
 
     def on_join(self):
+        meeting_id = self.join_window.text()
+        if not self.client.join_meeting(meeting_id):
+            # TODO: add pop up
+            pass
         self.join_window.close()
         self.meeting_window = QMainWindow()
         self.meeting_window.setFixedSize(1200, 900)
@@ -193,6 +194,7 @@ class Stats():
             self.voice_button.setIcon(QIcon('ui/closed_voice.png'))
             self.voice_button_status = 0
             self.voice_button.setText('Unmute')
+            self.client.audio_sock.sharing = False
         else:
             self.voice_button.setIcon(QIcon('ui/open_voice.png'))
             self.voice_button_status = 1
@@ -204,6 +206,7 @@ class Stats():
             self.video_button.setIcon(QIcon('ui/closed_video.png'))
             self.video_button_status = 0
             self.video_button.setText('Open Video')
+            self.client.video_sock.sharing = False
         else:
             self.video_button.setIcon(QIcon('ui/open_video.png'))
             self.video_button_status = 1

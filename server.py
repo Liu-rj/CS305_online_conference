@@ -15,7 +15,7 @@ import threading
 def video_sock_listen():
     print('video socket start listen...')
     video_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    video_sock.bind(('', XXVIDEOPORT))
+    video_sock.bind((XXIP, XXVIDEOPORT))
     video_sock.listen(2)
     while True:
         sock, address = video_sock.accept()
@@ -36,7 +36,7 @@ def video_sock_listen():
 def audio_sock_listen():
     print('audio socket start listen...')
     audio_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    audio_sock.bind(('', XXAUDIOPORT))
+    audio_sock.bind((XXIP, XXAUDIOPORT))
     audio_sock.listen(2)
     while True:
         sock, address = audio_sock.accept()
@@ -57,7 +57,7 @@ def audio_sock_listen():
 def screen_sock_listen():
     print('screen socket start listen...')
     screen_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    screen_sock.bind(('', XXSCREEENPORT))
+    screen_sock.bind((XXIP, XXSCREEENPORT))
     screen_sock.listen(2)
     while True:
         sock, address = screen_sock.accept()
@@ -90,7 +90,7 @@ def main_sock_listen():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     # Bind the address
-    sock.bind(('', XXPORT))
+    sock.bind((XXIP, XXPORT))
     # Socket listen
     sock.listen(2)
     # Start to listen
