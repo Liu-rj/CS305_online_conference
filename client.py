@@ -1,36 +1,7 @@
-import time
-import tkinter
-
 from CONSTANTS import *
 from client_sockets import *
-import sys
-
-
-'''
-    We provide the main client class here. It is a free
-    framework where you can implenment whatever you want.
-
-    We also provide a simple CLI menu which cantains two menus:
-        1. Main menu: If you are not in a meeting, you should use this menu
-            1.1 Create a meeting
-            1.2 Join a meeting
-        2. Meeting menu: If you are in a meeting, you should use this menu
-            2.1. (Stop) Share screen
-            2.2. (Stop) Control other's screen
-            2.3. (Stop) Control my screen
-            2.4. (Stop) Share video
-            2.5. (Stop) Share audio
-            2.6. Leave a meeting
-            2.7. Show current meeting members
-        It is a simple meeting menu. Taking the first action for example,
-        if you have not shared the screen, you start to share.
-        Otherwise, you would stop video_sharing.
-    You can use the variable of (client.state) and (client.changed) together to determine the
-    CIL menu.
-
-    If you want to implement the GUI directly, you can delete the CLI menu
-    related code.
-'''
+from PySide2.QtWidgets import *
+from ui.qt_test import Stats
 
 
 class Client(object):
@@ -42,55 +13,18 @@ class Client(object):
 
     def __init__(self):
         self.sock = ClientSocket((XXIP, XXPORT))
+        self.sock.connect()
         self.video_sock = VideoSock((XXIP, XXVIDEOPORT))
         self.audio_sock = AudioSock((XXIP, XXAUDIOPORT))
-        self.screen_sock = ScreenSock((XXIP,XXSCREEENPORT))
+        self.screen_sock = ScreenSock((XXIP, XXSCREEENPORT))
         self.beCtrlSock = beCtrlSock()
         self.beCtrlHost = "10.25.10.50:80"
         self.ctrlSock = None
-        # Here we define two variables for CIL menu
-        self.state = MAIN
-        self.changed = True
-        self.is_alive = True
-        self.name = '11911808'
-        self.pwd = '123456'
         self.room_id = None
 
     def __del__(self):
         self.sock.close_conn()
-        self.is_alive = False
-
-    # # Here we define an action function to change the CIL menu
-    # # based on different actions
-    # def action(self, action):
-    #     if self.state == MAIN:
-    #         if action == '1':
-    #             self.create_meeting()
-    #         elif action == '2':
-    #             sid = input("Please input the meeting id:")
-    #             while not str.isdigit(sid):
-    #                 sid = input("Please input the meeting id:")
-    #             sid = int(sid)
-    #             self.join_meeting(sid)
-    #     elif self.state == MEETING:
-    #         '''
-    #             Please complete following codes
-    #         '''
-    #         if action == '1':
-    #             pass
-    #         elif action == '2':
-    #             pass
-
-    def login(self):
-        self.sock.connect()
-        header = b'login'
-        data = 'username {}\r\npwd {}'.format(self.name, self.pwd).encode()
-        self.sock.send_data(header, data)
-        header, data = self.sock.receive_server_data()
-        if header == '200 OK':
-            return True
-        else:
-            return False
+        del self.video_sock, self.audio_sock, self.screen_sock, self.beCtrlSock
 
     def video_sharing(self):
         self.video_sock.share_video.start()
@@ -116,7 +50,6 @@ class Client(object):
     def remote_control(self):
         self.ctrlSock = CtrlSock(self.beCtrlHost)
 
-
     def create_meeting(self):
         header = b'create room'
         data = b''
@@ -127,13 +60,8 @@ class Client(object):
             self.video_sock.room_id = self.room_id
             self.audio_sock.room_id = self.room_id
             self.screen_sock.room_id = self.room_id
-            time.sleep(5)
-            # self.video_sharing()
-            # self.video_receiving()
-            # self.audio_sharing()
-            # self.audio_receiving()
-            self.screen_sharing()
-            # self.screen_receiving()
+            self.video_receiving()
+            self.audio_receiving()
         else:
             pass
 
@@ -147,49 +75,19 @@ class Client(object):
             self.video_sock.room_id = self.room_id
             self.audio_sock.room_id = self.room_id
             self.screen_sock.room_id = self.room_id
-            # self.video_receiving()
-            # self.audio_sharing()
-            # self.audio_receiving()
-            # self.screen_sharing()
-            self.screen_receiving()
+            self.video_receiving()
+            self.audio_receiving()
+            return True
         else:
             return False
 
-# root = tkinter.Tk()
+
 if __name__ == "__main__":
     # init server info
     client = Client()
-    status = client.login()
-    # show_btn = tkinter.Button(root, text="Show", command=Client.screen_receiving)
-    # show_btn.grid(row=2, column=1, padx=0, pady=10, ipadx=30, ipady=0)
-    if status:
-        print('successfully login!')
-        client.create_meeting()
-    # root.mainloop()
-    while True:
-        time.sleep(1)
-        if not client.is_alive:
-            print("Video connection lost...")
-            sys.exit(0)
-    # # A CIL menu loop
-    # while True:
-    #     if client.changed and client.state == MAIN:
-    #         client.changed = False
-    #         # Main menu
-    #         print("1. Create a meeting")
-    #         print("2. Join a meeting")
-    #         action = input("Action:")
-    #         client.action(action)
-    #     elif client.changed and client.state == MEETING:
-    #         client.changed = False
-    #         print("You are in the meeting: %d" % client.sid)
-    #         # meeting menu
-    #         print("1. (Stop) Share screen")
-    #         print("2. (Stop) Control other's screen")
-    #         print("3. (Stop) Control my screen")
-    #         print("4. (Stop) Share video")
-    #         print("5. (Stop) Share audio")
-    #         print("6. Leave a meeting")
-    #         print("7. Show current meeting members")
-    #         action = input("Action:")
-    #         client.action(action)
+    app = QApplication([])
+    stats = Stats(client)
+    stats.window.show()
+    app.exec_()
+    del client
+    print("Video connection lost...")

@@ -53,6 +53,7 @@ def audio_sock_listen():
         else:  # TODO: if join a non-existing room, what should we do?
             pass
 
+
 def screen_sock_listen():
     print('screen socket start listen...')
     screen_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -72,6 +73,7 @@ def screen_sock_listen():
             sock.send(b'200 OK\r\n\r\n ')
         else:  # TODO: if join a non-existing room, what should we do?
             pass
+
 
 def main_sock_listen():
     print('main socket start listen...')
@@ -95,7 +97,10 @@ def main_sock_listen():
     while True:
         # Wait for client to connect
         conn, address = sock.accept()
-        ServerSocket((conn, address)).start()
+        client = (conn, address)
+        server_socket = ServerSocket(client)
+        ServerSocket.clients[client] = server_socket
+        server_socket.start()
 
 
 if __name__ == "__main__":

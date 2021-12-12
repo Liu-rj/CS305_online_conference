@@ -171,6 +171,7 @@ class VideoSock(object):
                     break
         sock.close()
 
+
 class AudioSock(object):
     def __init__(self, server):
         self.server = server
@@ -205,10 +206,10 @@ class AudioSock(object):
         header, data = receive_data(sock)
         if header == '200 OK':
             self.in_stream = self.p.open(format=FORMAT,
-                                          channels=CHANNELS,
-                                          rate=RATE,
-                                          input=True,
-                                          frames_per_buffer=CHUNK)
+                                         channels=CHANNELS,
+                                         rate=RATE,
+                                         input=True,
+                                         frames_per_buffer=CHUNK)
             while self.in_stream.is_active():
                 frames = []
                 for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
@@ -256,6 +257,7 @@ class AudioSock(object):
                     self.out_stream.write(frame, CHUNK)
         sock.close()
 
+
 class ScreenSock(object):
     def __init__(self, server):
         # self.root = root
@@ -264,8 +266,8 @@ class ScreenSock(object):
         self.img = None
         self.imbyt = None
         self.showcan = None
-        self.bufsize = 10240# socket缓冲区大小
-        self.IMQUALITY = 50# 压缩比 1-100 数值越小，压缩比越高，图片质量损失越严重
+        self.bufsize = 10240  # socket缓冲区大小
+        self.IMQUALITY = 50  # 压缩比 1-100 数值越小，压缩比越高，图片质量损失越严重
         self.share_screen = threading.Thread(target=self.share_screen)
         self.share_screen.setDaemon(True)
         self.receive_screen = threading.Thread(target=self.receive_screen)
@@ -401,179 +403,180 @@ class ScreenSock(object):
                     break
         sock.close()
 
+
 class beCtrlSock(object):
 
     def __init__(self):
         self.img = None
         self.imbyt = None
-        self.IMQUALITY = 50# 压缩比 1-100 数值越小，压缩比越高，图片质量损失越严重
+        self.IMQUALITY = 50  # 压缩比 1-100 数值越小，压缩比越高，图片质量损失越严重
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.official_virtual_keys = {
-    0x08: 'backspace',
-    0x09: 'tab',
-    0x0c: 'clear',
-    0x0d: 'enter',
-    0x10: 'shift',
-    0x11: 'ctrl',
-    0x12: 'alt',
-    0x13: 'pause',
-    0x14: 'caps lock',
-    0x15: 'ime kana mode',
-    0x15: 'ime hanguel mode',
-    0x15: 'ime hangul mode',
-    0x17: 'ime junja mode',
-    0x18: 'ime final mode',
-    0x19: 'ime hanja mode',
-    0x19: 'ime kanji mode',
-    0x1b: 'esc',
-    0x1c: 'ime convert',
-    0x1d: 'ime nonconvert',
-    0x1e: 'ime accept',
-    0x1f: 'ime mode change request',
-    0x20: 'spacebar',
-    0x21: 'page up',
-    0x22: 'page down',
-    0x23: 'end',
-    0x24: 'home',
-    0x25: 'left',
-    0x26: 'up',
-    0x27: 'right',
-    0x28: 'down',
-    0x29: 'select',
-    0x2a: 'print',
-    0x2b: 'execute',
-    0x2c: 'print screen',
-    0x2d: 'insert',
-    0x2e: 'delete',
-    0x2f: 'help',
-    0x30: '0',
-    0x31: '1',
-    0x32: '2',
-    0x33: '3',
-    0x34: '4',
-    0x35: '5',
-    0x36: '6',
-    0x37: '7',
-    0x38: '8',
-    0x39: '9',
-    0x41: 'a',
-    0x42: 'b',
-    0x43: 'c',
-    0x44: 'd',
-    0x45: 'e',
-    0x46: 'f',
-    0x47: 'g',
-    0x48: 'h',
-    0x49: 'i',
-    0x4a: 'j',
-    0x4b: 'k',
-    0x4c: 'l',
-    0x4d: 'm',
-    0x4e: 'n',
-    0x4f: 'o',
-    0x50: 'p',
-    0x51: 'q',
-    0x52: 'r',
-    0x53: 's',
-    0x54: 't',
-    0x55: 'u',
-    0x56: 'v',
-    0x57: 'w',
-    0x58: 'x',
-    0x59: 'y',
-    0x5a: 'z',
-    0x5b: 'left windows',
-    0x5c: 'right windows',
-    0x5d: 'applications',
-    0x5f: 'sleep',
-    0x60: '0',
-    0x61: '1',
-    0x62: '2',
-    0x63: '3',
-    0x64: '4',
-    0x65: '5',
-    0x66: '6',
-    0x67: '7',
-    0x68: '8',
-    0x69: '9',
-    0x6a: '*',
-    0x6b: '=',
-    0x6c: 'separator',
-    0x6d: '-',
-    0x6e: 'decimal',
-    0x6f: '/',
-    0x70: 'f1',
-    0x71: 'f2',
-    0x72: 'f3',
-    0x73: 'f4',
-    0x74: 'f5',
-    0x75: 'f6',
-    0x76: 'f7',
-    0x77: 'f8',
-    0x78: 'f9',
-    0x79: 'f10',
-    0x7a: 'f11',
-    0x7b: 'f12',
-    0x7c: 'f13',
-    0x7d: 'f14',
-    0x7e: 'f15',
-    0x7f: 'f16',
-    0x80: 'f17',
-    0x81: 'f18',
-    0x82: 'f19',
-    0x83: 'f20',
-    0x84: 'f21',
-    0x85: 'f22',
-    0x86: 'f23',
-    0x87: 'f24',
-    0x90: 'num lock',
-    0x91: 'scroll lock',
-    0xa0: 'left shift',
-    0xa1: 'right shift',
-    0xa2: 'left ctrl',
-    0xa3: 'right ctrl',
-    0xa4: 'left menu',
-    0xa5: 'right menu',
-    0xa6: 'browser back',
-    0xa7: 'browser forward',
-    0xa8: 'browser refresh',
-    0xa9: 'browser stop',
-    0xaa: 'browser search key',
-    0xab: 'browser favorites',
-    0xac: 'browser start and home',
-    0xad: 'volume mute',
-    0xae: 'volume down',
-    0xaf: 'volume up',
-    0xb0: 'next track',
-    0xb1: 'previous track',
-    0xb2: 'stop media',
-    0xb3: 'play/pause media',
-    0xb4: 'start mail',
-    0xb5: 'select media',
-    0xb6: 'start application 1',
-    0xb7: 'start application 2',
-    0xbb: '+',
-    0xbc: ',',
-    0xbd: '-',
-    0xbe: '.',
-    0xe5: 'ime process',
-    0xf6: 'attn',
-    0xf7: 'crsel',
-    0xf8: 'exsel',
-    0xf9: 'erase eof',
-    0xfa: 'play',
-    0xfb: 'zoom',
-    0xfc: 'reserved ',
-    0xfd: 'pa1',
-    0xfe: 'clear',
-    0xba: ';',
-    0xde: '\'',
-    0xdb: '[',
-    0xdd: ']',
-    0xbf: '/',
-    0xc0: '`',
-    0xdc: '\\',
-}
+            0x08: 'backspace',
+            0x09: 'tab',
+            0x0c: 'clear',
+            0x0d: 'enter',
+            0x10: 'shift',
+            0x11: 'ctrl',
+            0x12: 'alt',
+            0x13: 'pause',
+            0x14: 'caps lock',
+            0x15: 'ime kana mode',
+            0x15: 'ime hanguel mode',
+            0x15: 'ime hangul mode',
+            0x17: 'ime junja mode',
+            0x18: 'ime final mode',
+            0x19: 'ime hanja mode',
+            0x19: 'ime kanji mode',
+            0x1b: 'esc',
+            0x1c: 'ime convert',
+            0x1d: 'ime nonconvert',
+            0x1e: 'ime accept',
+            0x1f: 'ime mode change request',
+            0x20: 'spacebar',
+            0x21: 'page up',
+            0x22: 'page down',
+            0x23: 'end',
+            0x24: 'home',
+            0x25: 'left',
+            0x26: 'up',
+            0x27: 'right',
+            0x28: 'down',
+            0x29: 'select',
+            0x2a: 'print',
+            0x2b: 'execute',
+            0x2c: 'print screen',
+            0x2d: 'insert',
+            0x2e: 'delete',
+            0x2f: 'help',
+            0x30: '0',
+            0x31: '1',
+            0x32: '2',
+            0x33: '3',
+            0x34: '4',
+            0x35: '5',
+            0x36: '6',
+            0x37: '7',
+            0x38: '8',
+            0x39: '9',
+            0x41: 'a',
+            0x42: 'b',
+            0x43: 'c',
+            0x44: 'd',
+            0x45: 'e',
+            0x46: 'f',
+            0x47: 'g',
+            0x48: 'h',
+            0x49: 'i',
+            0x4a: 'j',
+            0x4b: 'k',
+            0x4c: 'l',
+            0x4d: 'm',
+            0x4e: 'n',
+            0x4f: 'o',
+            0x50: 'p',
+            0x51: 'q',
+            0x52: 'r',
+            0x53: 's',
+            0x54: 't',
+            0x55: 'u',
+            0x56: 'v',
+            0x57: 'w',
+            0x58: 'x',
+            0x59: 'y',
+            0x5a: 'z',
+            0x5b: 'left windows',
+            0x5c: 'right windows',
+            0x5d: 'applications',
+            0x5f: 'sleep',
+            0x60: '0',
+            0x61: '1',
+            0x62: '2',
+            0x63: '3',
+            0x64: '4',
+            0x65: '5',
+            0x66: '6',
+            0x67: '7',
+            0x68: '8',
+            0x69: '9',
+            0x6a: '*',
+            0x6b: '=',
+            0x6c: 'separator',
+            0x6d: '-',
+            0x6e: 'decimal',
+            0x6f: '/',
+            0x70: 'f1',
+            0x71: 'f2',
+            0x72: 'f3',
+            0x73: 'f4',
+            0x74: 'f5',
+            0x75: 'f6',
+            0x76: 'f7',
+            0x77: 'f8',
+            0x78: 'f9',
+            0x79: 'f10',
+            0x7a: 'f11',
+            0x7b: 'f12',
+            0x7c: 'f13',
+            0x7d: 'f14',
+            0x7e: 'f15',
+            0x7f: 'f16',
+            0x80: 'f17',
+            0x81: 'f18',
+            0x82: 'f19',
+            0x83: 'f20',
+            0x84: 'f21',
+            0x85: 'f22',
+            0x86: 'f23',
+            0x87: 'f24',
+            0x90: 'num lock',
+            0x91: 'scroll lock',
+            0xa0: 'left shift',
+            0xa1: 'right shift',
+            0xa2: 'left ctrl',
+            0xa3: 'right ctrl',
+            0xa4: 'left menu',
+            0xa5: 'right menu',
+            0xa6: 'browser back',
+            0xa7: 'browser forward',
+            0xa8: 'browser refresh',
+            0xa9: 'browser stop',
+            0xaa: 'browser search key',
+            0xab: 'browser favorites',
+            0xac: 'browser start and home',
+            0xad: 'volume mute',
+            0xae: 'volume down',
+            0xaf: 'volume up',
+            0xb0: 'next track',
+            0xb1: 'previous track',
+            0xb2: 'stop media',
+            0xb3: 'play/pause media',
+            0xb4: 'start mail',
+            0xb5: 'select media',
+            0xb6: 'start application 1',
+            0xb7: 'start application 2',
+            0xbb: '+',
+            0xbc: ',',
+            0xbd: '-',
+            0xbe: '.',
+            0xe5: 'ime process',
+            0xf6: 'attn',
+            0xf7: 'crsel',
+            0xf8: 'exsel',
+            0xf9: 'erase eof',
+            0xfa: 'play',
+            0xfb: 'zoom',
+            0xfc: 'reserved ',
+            0xfd: 'pa1',
+            0xfe: 'clear',
+            0xba: ';',
+            0xde: '\'',
+            0xdb: '[',
+            0xdd: ']',
+            0xbf: '/',
+            0xc0: '`',
+            0xdc: '\\',
+        }
 
     def __del__(self):
         self.sock.close()
@@ -584,8 +587,8 @@ class beCtrlSock(object):
             threading.Thread(target=self.handle, args=(conn,)).start()
             threading.Thread(target=self.control, args=(conn,)).start()
 
-    #读取控制命令，并在本机还原操作
-    def control(self,conn):
+    # 读取控制命令，并在本机还原操作
+    def control(self, conn):
         def Op(key, op, ox, oy):
             # print(key, op, ox, oy)
             if key == 1:
@@ -644,8 +647,9 @@ class beCtrlSock(object):
                 Op(key, op, x, y)
         except:
             return
-    #传输屏幕信息
-    def handle(self,conn):
+
+    # 传输屏幕信息
+    def handle(self, conn):
         if self.imbyt is None:
             imorg = np.asarray(ImageGrab.grab())
             _, self.imbyt = cv2.imencode(".jpg", imorg, [cv2.IMWRITE_JPEG_QUALITY, self.IMQUALITY])
@@ -685,24 +689,25 @@ class beCtrlSock(object):
                 conn.sendall(lenb)
                 conn.sendall(self.imbyt)
 
+
 class CtrlSock(object):
 
-    def __init__(self,beCtrlHost):
+    def __init__(self, beCtrlHost):
         self.img = None
         self.imbyt = None
-        self.bufsize = 10240# socket缓冲区大小
+        self.bufsize = 10240  # socket缓冲区大小
         self.showcan = None
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         hs = beCtrlHost.split(":")
         if len(hs) == 2:
-            self.sock.connect((hs[0],int(hs[1])))
+            self.sock.connect((hs[0], int(hs[1])))
             threading.Thread(target=self.run).start()
 
     def __del__(self):
         self.sock.close()
 
-    #绑定事件
-    def BindEvents(self,canvas):
+    # 绑定事件
+    def BindEvents(self, canvas):
         def EventDo(data):
             self.sock.sendall(data)
 

@@ -19,18 +19,6 @@ import json
     so you can design it as you like.
 '''
 
-USERS = {}
-try:
-    with open('./user_data.json', 'r', encoding='utf-8') as file:
-        USERS = json.load(file)
-except Exception as e:
-    print(e)
-
-Online_Users = {}
-mail_host = "smtp.exmail.qq.com"  # 设置服务器
-mail_user = "11911808@mail.sustech.edu.cn"  # 用户名
-mail_pass = "QgZsoBpHChEAh2BT"  # 口令
-
 shared_lock = threading.Lock()
 
 
@@ -102,6 +90,8 @@ class Meeting(object):
                 try:
                     data = client[0].recv(81920)
                     for other in self.audio_receiving:
+                        if other[1][0] == client[1][0]:
+                            continue
                         other[0].sendall(data)
                 except:
                     continue
@@ -115,6 +105,7 @@ class Meeting(object):
                         other[0].sendall(data)
                 except:
                     continue
+
 
 class ServerSocket(threading.Thread):
     rooms = {}
@@ -141,21 +132,21 @@ class ServerSocket(threading.Thread):
                     return
             except:
                 continue
-            # TODO: the first action is to login
-            if header == 'login':
-                data = data.split('\r\n')
-                name = data[0].split(' ')[1]
-                pwd = data[1].split(' ')[1]
-                if name in USERS.keys() and USERS[name]['pwd'] == pwd:
-                    self.sock.send(b'200 OK\r\n\r\n ')
-                else:  # TODO: login failed, and then?
-                    self.sock.send(b'400 Error\r\n\r\nUser Name or Password Not Match!')
-                    self.sock.close()
-                    return
-                print('new client login: ', self.client[1])
-                ServerSocket.clients[self.client] = self
-            # the second action is to join room or create room
-            elif header == 'join room':
+            # if header == 'login':
+            #     data = data.split('\r\n')
+            #     name = data[0].split(' ')[1]
+            #     pwd = data[1].split(' ')[1]
+            #     if name in USERS.keys() and USERS[name]['pwd'] == pwd:
+            #         self.sock.send(b'200 OK\r\n\r\n ')
+            #     else:  # TODO: login failed, and then?
+            #         self.sock.send(b'400 Error\r\n\r\nUser Name or Password Not Match!')
+            #         self.sock.close()
+            #         return
+            #     print('new client login: ', self.client[1])
+            #     ServerSocket.clients[self.client] = self
+            # # the second action is to join room or create room
+            # el
+            if header == 'join room':
                 room_id = int(data.split(' ')[1])
                 if room_id in self.rooms.keys():
                     self.meeting = ServerSocket.rooms[room_id]
