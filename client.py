@@ -27,22 +27,22 @@ class Client(object):
         del self.video_sock, self.audio_sock, self.screen_sock, self.beCtrlSock
 
     def video_sharing(self):
-        self.video_sock.share_video.start()
+        self.video_sock.start_sharing()
 
     def video_receiving(self):
-        self.video_sock.receive_video.start()
+        self.video_sock.start_receiving()
 
     def audio_sharing(self):
-        self.audio_sock.share_audio.start()
+        self.audio_sock.start_sharing()
 
     def audio_receiving(self):
-        self.audio_sock.receive_audio.start()
+        self.audio_sock.start_receiving()
 
     def screen_sharing(self):
-        self.screen_sock.share_screen.start()
+        self.screen_sock.start_sharing()
 
     def screen_receiving(self):
-        self.screen_sock.receive_screen.start()
+        self.screen_sock.start_receiving()
 
     def beControl(self):
         self.beCtrlSock.run()

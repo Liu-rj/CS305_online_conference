@@ -106,15 +106,19 @@ class VideoSock(object):
         if self.fx < 0.3:
             self.fx = 0.3
         self.cap = cv2.VideoCapture(0)
-        self.share_video = threading.Thread(target=self.share_video)
-        self.share_video.setDaemon(True)
-        self.receive_video = threading.Thread(target=self.receive_video)
-        self.receive_video.setDaemon(True)
         self.sharing = False
         self.receiving = False
 
     def __del__(self):
         self.cap.release()
+
+    def start_sharing(self):
+        thread = threading.Thread(target=self.share_video)
+        thread.setDaemon(True)
+
+    def start_receiving(self):
+        thread = threading.Thread(target=self.receive_video)
+        thread.setDaemon(True)
 
     def share_video(self):
         self.sharing = True
@@ -183,10 +187,6 @@ class AudioSock(object):
         self.p = pyaudio.PyAudio()
         self.out_stream = None
         self.in_stream = None
-        self.share_audio = threading.Thread(target=self.share_audio)
-        self.share_audio.setDaemon(True)
-        self.receive_audio = threading.Thread(target=self.receive_audio)
-        self.receive_audio.setDaemon(True)
         self.sharing = False
         self.receiving = False
 
@@ -198,6 +198,14 @@ class AudioSock(object):
             self.in_stream.stop_stream()
             self.in_stream.close()
         self.p.terminate()
+
+    def start_sharing(self):
+        thread = threading.Thread(target=self.share_audio)
+        thread.setDaemon(True)
+
+    def start_receiving(self):
+        thread = threading.Thread(target=self.receive_audio)
+        thread.setDaemon(True)
 
     def share_audio(self):
         self.sharing = True
@@ -276,15 +284,21 @@ class ScreenSock(object):
         self.showcan = None
         self.bufsize = 10240  # socket缓冲区大小
         self.IMQUALITY = 50  # 压缩比 1-100 数值越小，压缩比越高，图片质量损失越严重
-        self.share_screen = threading.Thread(target=self.share_screen)
-        self.share_screen.setDaemon(True)
-        self.receive_screen = threading.Thread(target=self.receive_screen)
-        self.receive_screen.setDaemon(True)
+        self.sharing = False
+        self.receiving = False
 
     def __del__(self):
         if self.showcan is not None:
             self.showcan.destroy()
         pass
+
+    def start_sharing(self):
+        thread = threading.Thread(target=self.share_screen)
+        thread.setDaemon(True)
+
+    def start_receiving(self):
+        thread = threading.Thread(target=self.receive_screen)
+        thread.setDaemon(True)
 
     def share_screen(self):
         print("SCREEN sender starts...")
