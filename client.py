@@ -90,4 +90,4 @@ if __name__ == "__main__":
     stats.window.show()
     app.exec_()
     del client
-    print("Video connection lost...")
+    print("client connection lost...")

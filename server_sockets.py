@@ -1,23 +1,6 @@
 from CONSTANTS import *
 import threading
 import socket
-import json
-
-'''
-    We provide an exmaple ServerSocket here.
-    It is a subclass of threading.Thread, that is,
-    it is a threading class.
-    You can implement different server sockets with 
-    different data analyze methods. Or you use this
-    example ServerSocket as the only sockect then
-    you need to deal with different type of messages
-    in one class.
-
-    We also provide a Meeting class which is used to
-    record the meeting information.
-    We do not provide any information about the Meeting class,
-    so you can design it as you like.
-'''
 
 shared_lock = threading.Lock()
 
@@ -86,6 +69,10 @@ class Meeting(object):
                         other[0].sendall(data)
                 except:
                     continue
+
+    # def video_forward(self, data, sock):
+    #     for address in self.video_receiving:
+    #         sock.sendto(data, address)
 
     def audio_forward(self):
         while True:
