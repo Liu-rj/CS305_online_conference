@@ -1,3 +1,5 @@
+from typing import Union
+
 from CONSTANTS import *
 from client_sockets import *
 from PySide2.QtWidgets import *
@@ -13,14 +15,13 @@ class Client(object):
 
     def __init__(self):
         self.sock = ClientSocket((XXIP, XXPORT))
-        self.sock.connect()
-        self.video_sock = VideoSock((XXIP, XXVIDEOPORT))
+        self.video_sock: Union[None, VideoSock] = None
         self.audio_sock = AudioSock((XXIP, XXAUDIOPORT))
         self.screen_sock = ScreenSock((XXIP, XXSCREEENPORT))
         self.beCtrlSock = beCtrlSock()
         self.beCtrlHost = "10.25.10.50:80"
         self.ctrlSock = None
-        self.room_id = None
+        self.room_id: Union[None, int] = None
 
     def __del__(self):
         self.sock.close_conn()
@@ -50,42 +51,48 @@ class Client(object):
     def remote_control(self):
         self.ctrlSock = CtrlSock(self.beCtrlHost)
 
+    def setup(self, data):
+        self.room_id = int(data.split(' ')[1])
+        self.video_sock = VideoSock((XXIP, XXVIDEOPORT + self.room_id), self.sock.ip)
+        # self.video_sock.room_id = self.room_id
+        self.audio_sock.room_id = self.room_id
+        self.screen_sock.room_id = self.room_id
+        self.video_receiving()
+        # self.audio_receiving()
+
     def create_meeting(self):
         header = b'create room'
-        data = b''
+        data = 'video {}\r\naudio {}\r\nscreen {}'.format(CLIENTVIDEOPORT, CLIENTAUDIOPORT, CLIENTSCREENPORT).encode()
         self.sock.send_data(header, data)
         header, data = self.sock.receive_server_data()
         if header == '200 OK':
-            self.room_id = int(data.split(' ')[1])
-            self.video_sock.room_id = self.room_id
-            self.audio_sock.room_id = self.room_id
-            self.screen_sock.room_id = self.room_id
-            self.video_receiving()
-            self.audio_receiving()
+            self.setup(data)
         else:
             pass
 
-    def join_meeting(self, rid):
+    def join_meeting(self, rid) -> bool:
         header = b'join room'
-        data = b'roomId ' + str(rid).encode()
+        data = 'video {}\r\naudio {}\r\nscreen {}\r\nroomId {}'.format(CLIENTVIDEOPORT, CLIENTAUDIOPORT,
+                                                                       CLIENTSCREENPORT, str(rid)).encode()
         self.sock.send_data(header, data)
         header, data = self.sock.receive_server_data()
         if header == '200 OK':
-            self.room_id = int(data.split(' ')[1])
-            self.video_sock.room_id = self.room_id
-            self.audio_sock.room_id = self.room_id
-            self.screen_sock.room_id = self.room_id
-            self.video_receiving()
-            self.audio_receiving()
+            self.setup(data)
             return True
         else:
             return False
+
+    def quit_meeting(self):
+        header = b'join room'
+        data = b' '
+        self.sock.send_data(header, data)
+        del self.video_sock, self.audio_sock, self.screen_sock, self.ctrlSock
 
 
 if __name__ == "__main__":
     # init server info
     client = Client()
-    app = QApplication([])
+    app = QApplication()
     stats = Stats(client)
     stats.window.show()
     app.exec_()

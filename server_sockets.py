@@ -1,7 +1,10 @@
+from typing import Union, List
+
 from CONSTANTS import *
 import threading
 import socket
 
+VIDEO_CHUNK_SIZE = 32768
 shared_lock = threading.Lock()
 
 
@@ -17,21 +20,20 @@ def receive_data(sock):
 
 
 class Meeting(object):
-    def __init__(self, client):
+    def __init__(self, service, room_id: int):
+        self.room_id = room_id
         # initiate the server socket with a client queue
-        self.clients = [client]
-        self.video_sharing = []
-        self.video_receiving = []
+        self.services = [service]
         self.audio_sharing = []
         self.audio_receiving = []
         self.screen_sharing = []
         self.screen_receiving = []
+        self.video_buffer: List[bytes] = []
+        # udp socket binding
+        self.v_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.v_sock.bind(('', XXVIDEOPORT + self.room_id))
 
     def __del__(self):
-        for video in self.video_sharing:
-            video[0].close()
-        for video in self.video_receiving:
-            video[0].close()
         for audio in self.audio_sharing:
             audio[0].close()
         for audio in self.audio_receiving:
@@ -40,39 +42,30 @@ class Meeting(object):
             screen[0].close()
         for screen in self.screen_receiving:
             screen[0].close()
-        for client in self.clients:
-            ServerSocket.clients[client].meeting = None
 
     def start_meeting(self):
-        video = threading.Thread(target=self.video_forward)
-        video.setDaemon(True)
-        video.start()
-        audio = threading.Thread(target=self.audio_forward)
-        audio.setDaemon(True)
-        audio.start()
-        screen = threading.Thread(target=self.screen_forward)
-        screen.setDaemon(True)
-        screen.start()
+        threading.Thread(target=self.video_receiving, daemon=True).start()
+        threading.Thread(target=self.video_forwarding, daemon=True).start()
+        threading.Thread(target=self.audio_forward, daemon=True).start()
+        threading.Thread(target=self.screen_forward, daemon=True).start()
 
-    def add_client(self, client):
-        self.clients.append(client)
+    def add_client(self, service):
+        self.services.append(service)
 
-    def video_forward(self):
+    def video_receiving(self):
         while True:
-            for client in self.video_sharing:
-                try:
-                    data = client[0].recv(81920)
-                    if data == '':
-                        self.video_sharing.remove(client)
-                        continue
-                    for other in self.video_receiving:
-                        other[0].sendall(data)
-                except:
-                    continue
+            try:
+                self.video_buffer.append(self.v_sock.recv(VIDEO_CHUNK_SIZE))
+            except socket.error as e:
+                print(e)
+                continue
 
-    # def video_forward(self, data, sock):
-    #     for address in self.video_receiving:
-    #         sock.sendto(data, address)
+    def video_forwarding(self):
+        while True:
+            if self.video_buffer:
+                pkt = self.video_buffer.pop(0)
+                for service in self.services:
+                    self.v_sock.sendto(pkt, (service.client_ip, service.video_port))
 
     def audio_forward(self):
         while True:
@@ -107,19 +100,34 @@ class Meeting(object):
 
 class ServerSocket(threading.Thread):
     rooms = {}
-    clients = {}
     room_index = 0
     alive = True
 
-    def __init__(self, client):
+    def __init__(self, client_conn: socket.socket, client_address: tuple[str, int]):
         super().__init__()
-        self.client = client
-        self.sock = client[0]
+        self.client_ip = client_address[0]
+        self.sock: socket.socket = client_conn
         self.sock.setblocking(False)
-        self.meeting = None
+        self.meeting: Union[None, Meeting] = None
+        self.video_port: Union[None, int] = None
+        self.audio_port: Union[None, int] = None
+        self.screen_port: Union[None, int] = None
+        self.room_id: Union[None, int] = None
 
     def __del__(self):
         self.sock.close()
+
+    def parse_data(self, data):
+        for seg in data.split('\r\n'):
+            signal, content = seg.split(' ')
+            if signal == 'video':
+                self.video_port = int(content)
+            elif signal == 'audio':
+                self.audio_port = int(content)
+            elif signal == 'screen':
+                self.screen_port = int(content)
+            elif signal == 'roomId':
+                self.room_id = int(content)
 
     def run(self):
         # Start listen client action
@@ -127,38 +135,30 @@ class ServerSocket(threading.Thread):
             try:
                 header, data, alive = receive_data(self.sock)
                 if not alive:
+                    if self.meeting:
+                        self.meeting.services.remove(self)
+                    self.sock.close()
                     return
             except:
                 continue
-            # if header == 'login':
-            #     data = data.split('\r\n')
-            #     name = data[0].split(' ')[1]
-            #     pwd = data[1].split(' ')[1]
-            #     if name in USERS.keys() and USERS[name]['pwd'] == pwd:
-            #         self.sock.send(b'200 OK\r\n\r\n ')
-            #     else:  # TODO: login failed, and then?
-            #         self.sock.send(b'400 Error\r\n\r\nUser Name or Password Not Match!')
-            #         self.sock.close()
-            #         return
-            #     print('new client login: ', self.client[1])
-            #     ServerSocket.clients[self.client] = self
-            # # the second action is to join room or create room
-            # el
             if header == 'join room':
-                room_id = int(data.split(' ')[1])
-                if room_id in self.rooms.keys():
-                    self.meeting = ServerSocket.rooms[room_id]
+                self.parse_data(data)
+                if self.room_id in self.rooms.keys():
+                    self.meeting = ServerSocket.rooms[self.room_id]
                     with shared_lock:
-                        self.meeting.add_client(self.client)
-                    self.sock.send('200 OK\r\n\r\nroomId {}'.format(str(room_id)).encode())
+                        self.meeting.add_client(self)
+                    self.sock.send('200 OK\r\n\r\nroomId {}'.format(str(self.room_id)).encode())
                 else:  # TODO: if join a non-existing room, what should we do?
                     pass
             elif header == 'create room':
-                self.meeting = Meeting(self.client)
-                with shared_lock:
-                    ServerSocket.rooms[ServerSocket.room_index] = self.meeting
-                self.meeting.start_meeting()
-                self.sock.send('200 OK\r\n\r\nroomId {}'.format(str(ServerSocket.room_index)).encode())
+                self.parse_data(data)
+                self.room_id = ServerSocket.room_index
                 ServerSocket.room_index += 1
-            else:  # TODO: if nor join room or create room, what should we do?
-                pass
+                self.meeting = Meeting(self, self.room_id)
+                with shared_lock:
+                    ServerSocket.rooms[self.room_id] = self.meeting
+                self.meeting.start_meeting()
+                self.sock.send('200 OK\r\n\r\nroomId {}'.format(str(self.room_id)).encode())
+            elif header == 'quit room':
+                self.meeting.services.remove(self)
+                self.room_id = None
