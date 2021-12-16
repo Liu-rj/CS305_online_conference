@@ -1,5 +1,3 @@
-from typing import Union
-
 from CONSTANTS import *
 from client_sockets import *
 from PySide2.QtWidgets import *
@@ -15,18 +13,17 @@ class Client(object):
 
     def __init__(self):
         self.sock = ClientSocket((XXIP, XXPORT))
-        self.ip = self.sock.ip
-        self.clients = [self.ip]
-        self.app = QApplication()
-        self.stats = Stats(self)
-        self.stats.window.show()
-        self.video_sock = VideoSock((XXIP, XXVIDEOPORT), self.stats)
+        self.sock.connect()
+        self.video_sock = VideoSock((XXIP, XXVIDEOPORT))
         self.audio_sock = AudioSock((XXIP, XXAUDIOPORT))
         self.screen_sock = ScreenSock((XXIP, XXSCREEENPORT))
         self.beCtrlSock = beCtrlSock()
         self.beCtrlHost = "10.25.10.50:5004"
         self.ctrlSock = None
-        self.room_id: Union[int, None] = None
+        self.room_id = None
+        self.app = QApplication()
+        self.stats = Stats(self)
+        self.stats.window.show()
 
     def __del__(self):
         self.sock.close_conn()
@@ -56,13 +53,6 @@ class Client(object):
     def remote_control(self):
         self.ctrlSock = CtrlSock(self.beCtrlHost)
 
-    def setup(self):
-        self.video_sock.room_id = self.room_id
-        self.audio_sock.room_id = self.room_id
-        self.screen_sock.room_id = self.room_id
-        self.video_receiving()
-        self.audio_receiving()
-
     def create_meeting(self):
         header = b'create room'
         data = b''
@@ -70,7 +60,11 @@ class Client(object):
         header, data = self.sock.receive_server_data()
         if header == '200 OK':
             self.room_id = int(data.split(' ')[1])
-            self.setup()
+            self.video_sock.room_id = self.room_id
+            self.audio_sock.room_id = self.room_id
+            self.screen_sock.room_id = self.room_id
+            self.video_receiving()
+            self.audio_receiving()
         else:
             pass
 
@@ -81,34 +75,14 @@ class Client(object):
         header, data = self.sock.receive_server_data()
         if header == '200 OK':
             self.room_id = int(data.split(' ')[1])
-            self.setup()
+            self.video_sock.room_id = self.room_id
+            self.audio_sock.room_id = self.room_id
+            self.screen_sock.room_id = self.room_id
+            self.video_receiving()
+            self.audio_receiving()
             return True
         else:
             return False
-
-    def update_all_clients(self):
-        self.sock.sock.setblocking(False)
-        while self.room_id:
-            try:
-                header, data = self.sock.receive_server_data()
-            except:
-                continue
-            if header == 'clients':
-                clients_list = []
-                clients = data.split('\r\n')
-                for seg in clients:
-                    clients_list.append(seg[1])
-                self.clients = clients_list
-                self.stats.update_all_clients()
-        self.sock.sock.setblocking(True)
-
-    def quit_meeting(self):
-        header = b'quit room'
-        data = b' '
-        self.sock.send_data(header, data)
-        self.video_sock.end_receiving()
-        self.audio_sock.end_receiving()
-        self.screen_sock.end_receiving()
 
 
 if __name__ == "__main__":
