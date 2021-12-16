@@ -1,13 +1,14 @@
 from PySide2.QtWidgets import *
 from PySide2.QtCore import Qt, QSize
 from PySide2.QtGui import *
+from PIL.ImageQt import ImageQt
 
 
 class Stats():
 
     def __init__(self, client=None):
         self.client = client
-        self.window = QMainWindow()
+        self.window = MainWindow()
         self.window.setFixedSize(1080, 718)
         self.resolution = QGuiApplication.primaryScreen().availableGeometry()
         self.window.move((self.resolution.width() / 2) - (self.window.frameSize().width() / 2),
@@ -63,7 +64,7 @@ class Stats():
             border-color: navy; /* make the default button prominent */
         }""")
 
-        self.meeting_window = QMainWindow()
+        self.meeting_window = MeetingWindow()
         self.meeting_window.setFixedSize(1200, 900)
         self.meeting_window.move((self.resolution.width() / 2) - (self.meeting_window.frameSize().width() / 2),
                                  (self.resolution.height() / 2) - (self.meeting_window.frameSize().height() / 2))
@@ -171,7 +172,7 @@ class Stats():
             # TODO: add pop up
             pass
         self.join_window.close()
-        self.meeting_window = QMainWindow()
+        self.meeting_window = MeetingWindow()
         self.meeting_window.setFixedSize(1200, 900)
         self.meeting_window.move((self.resolution.width() / 2) - (self.meeting_window.frameSize().width() / 2),
                                  (self.resolution.height() / 2) - (self.meeting_window.frameSize().height() / 2))
@@ -181,12 +182,13 @@ class Stats():
 
     def handle_create(self):
         self.client.create_meeting()
-        self.meeting_window = QMainWindow()
+        self.meeting_window = MeetingWindow()
         self.meeting_window.setFixedSize(1200, 900)
         self.meeting_window.move((self.resolution.width() / 2) - (self.meeting_window.frameSize().width() / 2),
                                  (self.resolution.height() / 2) - (self.meeting_window.frameSize().height() / 2))
         self.meeting_window.setWindowTitle('SUSTech Online Meeting ' + str(self.client.room_id))
         self.init_meeting_window_buttons()
+        self.update_all_clients()
         self.meeting_window.show()
         self.window.close()
 
@@ -274,6 +276,44 @@ class Stats():
     def handle_more_button(self):
         print(1)
 
+    def update_all_clients(self):
+        num = len(self.client.clients)
+        self.all_frames = {}
+        for i in range(num):
+            frame = QFrame(self.meeting_window)
+            frame.resize(400, 400)
+            frame.setStyleSheet("background-color:green;")
+            if i < 3:
+                frame.move(i * 400, 0)
+            else:
+                frame.move((i - 3) * 400, 400)
+            frame.show()
+            self.all_frames.update({self.client.clients[i]:frame})
+
+    def update_image(self, ip, frame):
+        pix = None
+        if frame is not None:
+            pix = QPixmap.fromImage(ImageQt(frame).copy())
+        else:
+            pix = QPixmap.fromImage(ImageQt('ui/user.png').copy())
+        self.all_frames[ip].setPixmap(pix)
+
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super(MainWindow, self).__init__()
+
+    def closeEvent(self, event):
+        print(1)
+        event.accept()
+
+class MeetingWindow(QMainWindow):
+    def __init__(self):
+        super(MeetingWindow, self).__init__()
+
+    def closeEvent(self, event):
+        print(2)
+        event.accept()
 
 # app = QApplication([])
 # stats = Stats()
