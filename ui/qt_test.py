@@ -188,6 +188,7 @@ class Stats():
         self.meeting_window.setWindowTitle('SUSTech Online Meeting ' + str(self.client.room_id))
         self.init_meeting_window_buttons()
         self.meeting_window.show()
+        self.window.close()
 
     def handle_voice_button(self):
         if self.voice_button_status == 1:
