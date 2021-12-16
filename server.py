@@ -60,7 +60,6 @@ def audio_sock_listen():
         else:  # TODO: if join a non-existing room, what should we do?
             pass
 
-
 def screen_sock_listen():
     print('screen socket start listen...')
     screen_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
