@@ -187,7 +187,7 @@ class VideoSock(object):
                 data = data[msg_size:]
                 frame_data = zlib.decompress(zframe_data)
                 frame = pickle.loads(frame_data)
-                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2RGBA)
+                # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2RGBA)
                 self.stats.update_image(ip, frame)
                 # cv2.namedWindow(ip, cv2.WINDOW_NORMAL)
                 # cv2.imshow(ip, frame)

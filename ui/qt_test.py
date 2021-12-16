@@ -1,3 +1,4 @@
+import cv2
 from PySide2.QtWidgets import *
 from PySide2.QtCore import Qt, QSize
 from PySide2.QtGui import *
@@ -296,7 +297,7 @@ class Stats():
     def update_image(self, ip, frame):
         pix = None
         if frame is not None:
-            frame = Image.fromarray(frame)
+            frame = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             frame = frame.resize((400, 400), Image.ANTIALIAS)
             pix = QPixmap.fromImage(ImageQt(frame).copy())
         else:
