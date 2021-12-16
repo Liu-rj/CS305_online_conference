@@ -160,66 +160,6 @@ class VideoSock(object):
         sock.sendall(struct.pack("L", len(ip_b)) + ip_b + struct.pack("L", 0))
         sock.close()
 
-    # def share_video(self):
-    #     self.sharing = True
-    #     print("VIDEO sender starts...")
-    #     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    #     sock.connect(("8.8.8.8", 80))
-    #     ip_b = sock.getsockname()[0].encode()
-    #     while self.sharing and self.cap.isOpened():
-    #         msg = b'share ' + str(self.room_id).encode() + b'\r\n\r\n'
-    #         ret, frame = self.cap.read()
-    #         sframe = cv2.resize(frame, (0, 0), fx=self.fx, fy=self.fx)
-    #         data = pickle.dumps(sframe)
-    #         zdata = zlib.compress(data, zlib.Z_BEST_COMPRESSION)
-    #         msg += struct.pack("L", len(ip_b)) + ip_b + struct.pack("L", len(zdata)) + zdata
-    #         print(len(msg))
-    #         sock.sendto(msg, self.server)
-    #         for i in range(self.interval):
-    #             self.cap.read()
-    #     msg = struct.pack("L", len(ip_b)) + ip_b + struct.pack("L", 0)
-    #     sock.sendto(msg, self.server)
-    #     sock.close()
-    #
-    # def receive_video(self):
-    #     self.receiving = True
-    #     print("VIDEO receiver starts...")
-    #     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    #     msg = b'receive ' + str(self.room_id).encode() + b'\r\n\r\n '
-    #     sock.sendto(msg, self.server)
-    #     raw_data = sock.recv(1024)
-    #     header, data = parse_data(raw_data)
-    #     if header == '200 OK':
-    #         data = "".encode("utf-8")
-    #         payload_size = struct.calcsize("L")
-    #         while self.receiving:
-    #             while len(data) < payload_size:
-    #                 data += sock.recv(81920)
-    #             ip_size = struct.unpack("L", data[:payload_size])[0]
-    #             data = data[payload_size:]
-    #             while len(data) < ip_size:
-    #                 data += sock.recv(81920)
-    #             ip = data[:ip_size].decode()
-    #             data = data[ip_size:]
-    #             while len(data) < payload_size:
-    #                 data += sock.recv(81920)
-    #             msg_size = struct.unpack("L", data[:payload_size])[0]
-    #             data = data[payload_size:]
-    #             if msg_size == 0:
-    #                 cv2.destroyWindow(ip)
-    #                 continue
-    #             while len(data) < msg_size:
-    #                 data += sock.recv(81920)
-    #             zframe_data = data[:msg_size]
-    #             data = data[msg_size:]
-    #             frame_data = zlib.decompress(zframe_data)
-    #             frame = pickle.loads(frame_data)
-    #             cv2.namedWindow(ip, cv2.WINDOW_NORMAL)
-    #             cv2.imshow(ip, frame)
-    #             if cv2.waitKey(1) & 0xFF == 27:
-    #                 break
-    #     sock.close()
-
     def receive_video(self):
         self.receiving = True
         print("VIDEO receiver starts...")

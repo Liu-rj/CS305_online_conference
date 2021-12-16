@@ -40,21 +40,6 @@ def video_sock_listen():
             pass
 
 
-# def video_sock_listen():
-#     print('video socket start listen...')
-#     video_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-#     video_sock.bind((XXIP, XXVIDEOPORT))
-#     while True:
-#         raw_data, address = video_sock.recvfrom(200000)
-#         header, data = parse_data(raw_data)
-#         info, room_id = header.decode().split(' ')
-#         if info == 'receive':
-#             video_sock.sendto(b'200 OK\r\n\r\n ', address)
-#             ServerSocket.rooms[int(room_id)].video_receiving.append(address)
-#         elif info == 'share':
-#             ServerSocket.rooms[int(room_id)].video_forward(data, video_sock)
-
-
 def audio_sock_listen():
     print('audio socket start listen...')
     audio_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

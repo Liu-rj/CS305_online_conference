@@ -70,10 +70,6 @@ class Meeting(object):
                 except:
                     continue
 
-    # def video_forward(self, data, sock):
-    #     for address in self.video_receiving:
-    #         sock.sendto(data, address)
-
     def audio_forward(self):
         while True:
             for client in self.audio_sharing:

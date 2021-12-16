@@ -21,6 +21,9 @@ class Client(object):
         self.beCtrlHost = "10.25.10.50:80"
         self.ctrlSock = None
         self.room_id = None
+        self.app = QApplication()
+        self.stats = Stats(self)
+        self.stats.window.show()
 
     def __del__(self):
         self.sock.close_conn()
@@ -85,9 +88,6 @@ class Client(object):
 if __name__ == "__main__":
     # init server info
     client = Client()
-    app = QApplication([])
-    stats = Stats(client)
-    stats.window.show()
-    app.exec_()
+    client.app.exec_()
     del client
     print("client connection lost...")
