@@ -1,13 +1,12 @@
 import socket
 import threading
-import time
 import tkinter
+from typing import Tuple
 
 import cv2
 import struct
 import pickle
 import zlib
-
 import numpy as np
 import pyaudio
 from PIL import ImageGrab, ImageTk, Image
@@ -37,6 +36,8 @@ class ClientSocket(object):
         self.server = server
         # Create socket
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.connect()
+        self.ip = self.sock.getsockname()[0]
         # Create a receive_server_data threading
         # self.receive_thread = threading.Thread(target=self.receive_server_data)
 
@@ -59,14 +60,6 @@ class ClientSocket(object):
         data = raw_data[1]
         return header, data
 
-    # def analyze_receive_data(self, header, data):
-    #     """
-    #         Analyze the received data
-    #         You can also combine this function within
-    #         the "receive_server_data", so you can ignore this function
-    #     """
-    #     pass
-
     def send_data(self, header, data):
         """
             This function is used to send data to the server
@@ -75,15 +68,6 @@ class ClientSocket(object):
         """
         pack = header + b'\r\n\r\n' + data
         self.sock.sendall(pack)
-
-    # def construct_sending_data(self, *args):
-    #     """
-    #         Construct the sending data
-    #         @Returns
-    #             header: The header of the msg
-    #             data: The data of the msg
-    #     """
-    #     pass
 
 
 def receive_data(sock):
@@ -106,8 +90,9 @@ def send_data(sock, header, data):
 
 
 class VideoSock(object):
-    def __init__(self, server):
+    def __init__(self, server: Tuple[str, int], stats):
         self.server = server
+        self.stats = stats
         self.room_id = None
         self.interval = 1
         self.fx = 1 / (self.interval + 1)
@@ -131,6 +116,10 @@ class VideoSock(object):
         thread = threading.Thread(target=self.receive_video)
         thread.setDaemon(True)
         thread.start()
+
+    def end_receiving(self):
+        self.receiving = False
+        self.sharing = False
 
     def share_video(self):
         self.sharing = True
@@ -189,7 +178,8 @@ class VideoSock(object):
                 msg_size = struct.unpack("L", data[:payload_size])[0]
                 data = data[payload_size:]
                 if msg_size == 0:
-                    cv2.destroyWindow(ip)
+                    self.stats.update_image(ip, None)
+                    # cv2.destroyWindow(ip)
                     continue
                 while len(data) < msg_size:
                     data += sock.recv(81920)
@@ -197,10 +187,12 @@ class VideoSock(object):
                 data = data[msg_size:]
                 frame_data = zlib.decompress(zframe_data)
                 frame = pickle.loads(frame_data)
-                cv2.namedWindow(ip, cv2.WINDOW_NORMAL)
-                cv2.imshow(ip, frame)
-                if cv2.waitKey(1) & 0xFF == 27:
-                    break
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2RGBA)
+                self.stats.update_image(ip, frame)
+                # cv2.namedWindow(ip, cv2.WINDOW_NORMAL)
+                # cv2.imshow(ip, frame)
+                # if cv2.waitKey(1) & 0xFF == 27:
+                #     break
         sock.close()
 
 
@@ -232,6 +224,10 @@ class AudioSock(object):
         thread = threading.Thread(target=self.receive_audio)
         thread.setDaemon(True)
         thread.start()
+
+    def end_receiving(self):
+        self.receiving = False
+        self.sharing = False
 
     def share_audio(self):
         self.sharing = True
@@ -327,6 +323,10 @@ class ScreenSock(object):
         thread = threading.Thread(target=self.receive_screen)
         thread.setDaemon(True)
         thread.start()
+
+    def end_receiving(self):
+        self.receiving = False
+        self.sharing = False
 
     def share_screen(self):
         print("SCREEN sender starts...")

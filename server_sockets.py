@@ -1,3 +1,5 @@
+from typing import Union, Tuple
+
 from CONSTANTS import *
 import threading
 import socket
@@ -100,6 +102,16 @@ class Meeting(object):
                 except:
                     continue
 
+    def broadcast(self):
+        header = b'clients'
+        data = b''
+        for client in self.clients:
+            data += f'ip {client[1][0]}\r\n'
+        data.strip(b'\r\n')
+        msg = header + b'\r\n\r\n' + data
+        for client in self.clients:
+            client[0].send(msg)
+
 
 class ServerSocket(threading.Thread):
     rooms = {}
@@ -109,13 +121,19 @@ class ServerSocket(threading.Thread):
 
     def __init__(self, client):
         super().__init__()
-        self.client = client
-        self.sock = client[0]
+        self.client: Tuple[socket.socket, Tuple[str, int]] = client
+        self.sock: socket.socket = client[0]
         self.sock.setblocking(False)
-        self.meeting = None
+        self.meeting: Union[Meeting, None] = None
 
     def __del__(self):
+        self.quit_meeting()
         self.sock.close()
+
+    def quit_meeting(self):
+        if not self.meeting:
+            self.meeting.clients.remove(self.client)
+            self.meeting = None
 
     def run(self):
         # Start listen client action
@@ -126,26 +144,13 @@ class ServerSocket(threading.Thread):
                     return
             except:
                 continue
-            # if header == 'login':
-            #     data = data.split('\r\n')
-            #     name = data[0].split(' ')[1]
-            #     pwd = data[1].split(' ')[1]
-            #     if name in USERS.keys() and USERS[name]['pwd'] == pwd:
-            #         self.sock.send(b'200 OK\r\n\r\n ')
-            #     else:  # TODO: login failed, and then?
-            #         self.sock.send(b'400 Error\r\n\r\nUser Name or Password Not Match!')
-            #         self.sock.close()
-            #         return
-            #     print('new client login: ', self.client[1])
-            #     ServerSocket.clients[self.client] = self
-            # # the second action is to join room or create room
-            # el
             if header == 'join room':
                 room_id = int(data.split(' ')[1])
                 if room_id in self.rooms.keys():
                     self.meeting = ServerSocket.rooms[room_id]
                     with shared_lock:
                         self.meeting.add_client(self.client)
+                        self.meeting.broadcast()
                     self.sock.send('200 OK\r\n\r\nroomId {}'.format(str(room_id)).encode())
                 else:  # TODO: if join a non-existing room, what should we do?
                     pass
@@ -156,5 +161,5 @@ class ServerSocket(threading.Thread):
                 self.meeting.start_meeting()
                 self.sock.send('200 OK\r\n\r\nroomId {}'.format(str(ServerSocket.room_index)).encode())
                 ServerSocket.room_index += 1
-            else:  # TODO: if nor join room or create room, what should we do?
-                pass
+            elif header == 'quit room':
+                self.quit_meeting()

@@ -2,7 +2,7 @@ from PySide2.QtWidgets import *
 from PySide2.QtCore import Qt, QSize
 from PySide2.QtGui import *
 from PIL.ImageQt import ImageQt
-
+from PIL import Image
 
 class Stats():
 
@@ -280,22 +280,29 @@ class Stats():
         num = len(self.client.clients)
         self.all_frames = {}
         for i in range(num):
-            frame = QFrame(self.meeting_window)
+            frame = QLabel(self.meeting_window)
             frame.resize(400, 400)
-            frame.setStyleSheet("background-color:green;")
             if i < 3:
                 frame.move(i * 400, 0)
             else:
                 frame.move((i - 3) * 400, 400)
+            image = Image.open('ui/user.png')
+            image = image.resize((400, 400), Image.ANTIALIAS)
+            pix = QPixmap.fromImage(ImageQt(image).copy())
+            frame.setPixmap(pix)
             frame.show()
             self.all_frames.update({self.client.clients[i]:frame})
 
     def update_image(self, ip, frame):
         pix = None
         if frame is not None:
+            frame = Image.fromarray(frame)
+            frame = frame.resize((400, 400), Image.ANTIALIAS)
             pix = QPixmap.fromImage(ImageQt(frame).copy())
         else:
-            pix = QPixmap.fromImage(ImageQt('ui/user.png').copy())
+            frame = Image.open('ui/user.png')
+            frame = frame.resize((400, 400), Image.ANTIALIAS)
+            pix = QPixmap.fromImage(ImageQt(frame).copy())
         self.all_frames[ip].setPixmap(pix)
 
 
