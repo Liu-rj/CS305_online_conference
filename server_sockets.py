@@ -19,9 +19,10 @@ def receive_data(sock):
 
 
 class Meeting(object):
-    def __init__(self, client):
+    def __init__(self, client, room_id):
         # initiate the server socket with a client queue
         self.clients = [client]
+        self.room_id = room_id
         self.video_sharing = []
         self.video_receiving = []
         self.audio_sharing = []
@@ -133,6 +134,8 @@ class ServerSocket(threading.Thread):
     def quit_meeting(self):
         if not self.meeting:
             self.meeting.clients.remove(self.client)
+            if not self.meeting.clients:
+                del ServerSocket.rooms[self.meeting.room_id]
             self.meeting = None
 
     def run(self):
@@ -155,11 +158,12 @@ class ServerSocket(threading.Thread):
                 else:  # TODO: if join a non-existing room, what should we do?
                     pass
             elif header == 'create room':
-                self.meeting = Meeting(self.client)
+                room_id = ServerSocket.room_index
+                self.meeting = Meeting(self.client, room_id)
                 with shared_lock:
-                    ServerSocket.rooms[ServerSocket.room_index] = self.meeting
+                    ServerSocket.rooms[room_id] = self.meeting
                 self.meeting.start_meeting()
-                self.sock.send('200 OK\r\n\r\nroomId {}'.format(str(ServerSocket.room_index)).encode())
+                self.sock.send('200 OK\r\n\r\nroomId {}'.format(str(room_id)).encode())
                 ServerSocket.room_index += 1
             elif header == 'quit room':
                 self.quit_meeting()
