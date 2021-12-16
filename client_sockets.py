@@ -9,9 +9,13 @@ import pickle
 import zlib
 import numpy as np
 import pyaudio
-from PIL import ImageGrab, ImageTk, Image
+import qtpy
+from PIL import ImageGrab, ImageTk, Image, ImageQt
 import mouse
 import keyboard
+from PySide2.QtWidgets import *
+from PySide2.QtCore import Qt, QSize
+from PySide2.QtGui import *
 
 '''
     We provide a base class here.
@@ -456,11 +460,14 @@ class ScreenSock(object):
 
 class beCtrlSock(object):
 
-    def __init__(self):
+    def __init__(self,stats,addr):
         self.img = None
         self.imbyt = None
+        self.stats = stats
         self.IMQUALITY = 50  # 压缩比 1-100 数值越小，压缩比越高，图片质量损失越严重
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.bind(addr)
+        self.conn = None
         self.official_virtual_keys = {
             0x08: 'backspace',
             0x09: 'tab',
@@ -627,15 +634,71 @@ class beCtrlSock(object):
             0xc0: '`',
             0xdc: '\\',
         }
+        self.control_msg_window = QMainWindow()
+        self.control_msg_window.setFixedSize(600, 200)
+        self.resolution = QGuiApplication.primaryScreen().availableGeometry()
+        self.control_msg_window.move((self.resolution.width() / 2) - (self.control_msg_window.frameSize().width() / 2),
+                                     (self.resolution.height() / 2) - (
+                                                 self.control_msg_window.frameSize().height() / 2))
+        self.control_msg_window.setWindowTitle('Control Message')
+        self.msg_area = QLineEdit(self.control_msg_window)
+        self.msg_area.setStyleSheet("color: blue;"
+                                    "background-color: yellow;"
+                                    "selection-color: yellow;"
+                                    "selection-background-color: blue;")
+        self.msg_area.setFixedSize(QSize(550, 50))
+        self.msg_area.setWindowTitle('Meeting Info')
+        self.msg_area.setFont(QFont("Times New Roman", 18))
+        self.msg_area.setReadOnly(True)
+        self.msg_area.move(25, 30)
+        self.confirm_button = QPushButton(self.control_msg_window)
+        self.confirm_button.setIconSize(QSize(50, 50))
+        self.confirm_button.setText('Confirm')
+        self.confirm_button.setFont(QFont("Times New Roman", 18))
+        self.confirm_button.clicked.connect(self.handle_confirm)
+        self.confirm_button.move(50, 90)
+        self.confirm_button.resize(200, 80)
+        self.confirm_button.setStyleSheet("QToolButton{border:none;color:rgb(0, 0, 0);}"
+                                          "QToolButton:hover{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}"
+                                          "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
+        self.cancel_button = QPushButton(self.control_msg_window)
+        self.cancel_button.setIconSize(QSize(50, 50))
+        self.cancel_button.setText('Confirm')
+        self.cancel_button.setFont(QFont("Times New Roman", 18))
+        self.cancel_button.clicked.connect(self.handle_cancel)
+        self.cancel_button.move(300, 90)
+        self.cancel_button.resize(200, 80)
+        self.cancel_button.setStyleSheet("QToolButton{border:none;color:rgb(0, 0, 0);}"
+                                         "QToolButton:hover{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}"
+                                         "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
+
 
     def __del__(self):
         self.sock.close()
 
     def run(self):
-        while True:
-            conn, addr = self.sock.accept()
-            threading.Thread(target=self.handle, args=(conn,)).start()
-            threading.Thread(target=self.control, args=(conn,)).start()
+        thread = threading.Thread(target=self.wait)
+        thread.setDaemon(True)
+        thread.start()
+        self.msg_area.setText('ip' + str("addr") +' wants to control your PC!')
+        self.control_msg_window.show()
+
+    def wait(self):
+        print("receive")
+        # self.sock.listen(2)
+        # while True:
+        #     self.conn, addr = self.sock.accept()
+
+    def handle_confirm(self):
+        send_data(self.conn,b'accept',(str(self.conn.getsockname()[0])).encode())
+        threading.Thread(target=self.handle, args=(self.conn,)).start()
+        threading.Thread(target=self.control, args=(self.conn,)).start()
+        self.control_msg_window.close()
+
+    def handle_cancel(self):
+        send_data(self.conn,b'refuse',("").encode())
+        self.conn.close()
+        self.control_msg_window.close()
 
     # 读取控制命令，并在本机还原操作
     def control(self, conn):
@@ -746,15 +809,24 @@ class CtrlSock(object):
         self.img = None
         self.imbyt = None
         self.bufsize = 10240  # socket缓冲区大小
-        self.showcan = None
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.showcan = tkinter.Tk()
+        self.showcan.title(beCtrlHost)
         hs = beCtrlHost.split(":")
         if len(hs) == 2:
             self.sock.connect((hs[0], int(hs[1])))
-            threading.Thread(target=self.run).start()
+            print("request")
+            self.request()
 
     def __del__(self):
         self.sock.close()
+
+    def request(self):
+        header, data = receive_data(self.sock)
+        if header == "accept":
+            threading.Thread(target=self.run).start()
+        else:
+            self.__del__()
 
     # 绑定事件
     def BindEvents(self, canvas):
@@ -817,9 +889,7 @@ class CtrlSock(object):
         h, w, _ = img.shape
         imsh = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)
         imi = Image.fromarray(imsh)
-        imgTK = ImageTk.PhotoImage(image=imi)
-        if self.showcan is None:
-            self.showcan = tkinter.Tk()
+        imgTK = ImageTk.PhotoImage(imi)
         cv = tkinter.Canvas(self.showcan, width=w, height=h, bg="white")
         cv.focus_set()
         self.BindEvents(cv)

@@ -262,17 +262,18 @@ class Stats():
         print(self.cs_group.checkedButton().text())
 
     def handle_invite_button(self):
-        self.invite_window = QLineEdit()
-        self.invite_window.setText('The meeting id is')
-        self.invite_window.setStyleSheet("color: blue;"
-                                         "background-color: yellow;"
-                                         "selection-color: yellow;"
-                                         "selection-background-color: blue;")
-        self.invite_window.setFixedSize(QSize(300, 50))
-        self.invite_window.setWindowTitle('Meeting Info')
-        self.invite_window.setFont(QFont("Times New Roman", 18))
-        self.invite_window.setReadOnly(True)
-        self.invite_window.show()
+        self.client.remote_control()
+        # self.invite_window = QLineEdit()
+        # self.invite_window.setText('The meeting id is')
+        # self.invite_window.setStyleSheet("color: blue;"
+        #                                  "background-color: yellow;"
+        #                                  "selection-color: yellow;"
+        #                                  "selection-background-color: blue;")
+        # self.invite_window.setFixedSize(QSize(300, 50))
+        # self.invite_window.setWindowTitle('Meeting Info')
+        # self.invite_window.setFont(QFont("Times New Roman", 18))
+        # self.invite_window.setReadOnly(True)
+        # self.invite_window.show()
 
     def handle_more_button(self):
         print(1)
