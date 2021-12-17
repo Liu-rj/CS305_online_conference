@@ -259,6 +259,8 @@ class Stats():
     def handle_control_confirm(self):
         self.control_confirm = True
         self.control_window.close()
+        self.client.remote_control(self.to_control_ip)
+        print("close")
 
     def handle_control_cancel(self):
         self.control_confirm = False

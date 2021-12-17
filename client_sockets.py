@@ -460,9 +460,10 @@ class ScreenSock(object):
 
 class beCtrlSock(object):
 
-    def __init__(self,addr):
+    def __init__(self,stats,addr):
         self.img = None
         self.imbyt = None
+        self.stats = stats
         self.IMQUALITY = 50  # 压缩比 1-100 数值越小，压缩比越高，图片质量损失越严重
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.bind(addr)
@@ -642,25 +643,25 @@ class beCtrlSock(object):
         thread = threading.Thread(target=self.wait)
         thread.setDaemon(True)
         thread.start()
-        #TODO: stats.handle_control_msg(ip)
 
     def wait(self):
-        print("receive")
-        # self.sock.listen(2)
-        # while True:
-        #     self.conn, addr = self.sock.accept()
+        print("beCtrl open")
+        self.sock.listen(2)
+        while True:
+            self.conn, addr = self.sock.accept()
+            print("accept")
+            self.stats.handle_control_msg(addr)
+            print("accept")
 
     def handle_confirm(self):
         send_data(self.conn,b'accept',(str(self.conn.getsockname()[0])).encode())
         threading.Thread(target=self.handle, args=(self.conn,)).start()
         threading.Thread(target=self.control, args=(self.conn,)).start()
         #TODO: Bug may exist
-        # self.control_msg_window.close()
 
     def handle_cancel(self):
         send_data(self.conn,b'refuse',("").encode())
         self.conn.close()
-        # self.control_msg_window.close()
 
     # 读取控制命令，并在本机还原操作
     def control(self, conn):
@@ -772,23 +773,26 @@ class CtrlSock(object):
         self.imbyt = None
         self.bufsize = 10240  # socket缓冲区大小
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.showcan = tkinter.Tk()
-        self.showcan.title(beCtrlHost)
-        hs = beCtrlHost.split(":")
-        if len(hs) == 2:
-            self.sock.connect((hs[0], int(hs[1])))
-            print("request")
-            self.request()
+        # hs = beCtrlHost.split(":")
+        # if len(hs) == 2:
+        self.beCtrlHost = beCtrlHost
 
     def __del__(self):
         self.sock.close()
 
-    def request(self):
-        header, data = receive_data(self.sock)
-        if header == "accept":
-            threading.Thread(target=self.run).start()
-        else:
-            self.__del__()
+    def run(self):
+        thread = threading.Thread(target=self.startCtrl)
+        thread.setDaemon(True)
+        thread.start()
+
+    # def request(self):
+    #     self.sock.connect(self.beCtrlHost)
+    #     print("request")
+    #     header, data = receive_data(self.sock)
+    #     if header == "accept":
+    #         self.startCtrl()
+    #     else:
+    #         self.__del__()
 
     # 绑定事件
     def BindEvents(self, canvas):
@@ -834,54 +838,66 @@ class CtrlSock(object):
         canvas.bind(sequence="<KeyPress>", func=KeyDown)
         canvas.bind(sequence="<KeyRelease>", func=KeyUp)
 
-    def run(self):
-        lenb = self.sock.recv(5)
-        imtype, le = struct.unpack(">BI", lenb)
-        imb = b''
-        while le > self.bufsize:
-            t = self.sock.recv(self.bufsize)
-            imb += t
-            le -= len(t)
-        while le > 0:
-            t = self.sock.recv(le)
-            imb += t
-            le -= len(t)
-        data = np.frombuffer(imb, dtype=np.uint8)
-        img = cv2.imdecode(data, cv2.IMREAD_COLOR)
-        h, w, _ = img.shape
-        imsh = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)
-        imi = Image.fromarray(imsh)
-        imgTK = ImageTk.PhotoImage(imi)
-        cv = tkinter.Canvas(self.showcan, width=w, height=h, bg="white")
-        cv.focus_set()
-        self.BindEvents(cv)
-        cv.pack()
-        cv.create_image(0, 0, anchor=tkinter.NW, image=imgTK)
+    def startCtrl(self):
         while True:
             try:
-                lenb = self.sock.recv(5)
-                imtype, le = struct.unpack(">BI", lenb)
-                imb = b''
-                while le > self.bufsize:
-                    t = self.sock.recv(self.bufsize)
-                    imb += t
-                    le -= len(t)
-                while le > 0:
-                    t = self.sock.recv(le)
-                    imb += t
-                    le -= len(t)
-                data = np.frombuffer(imb, dtype=np.uint8)
-                ims = cv2.imdecode(data, cv2.IMREAD_COLOR)
-                if imtype == 1:
-                    # 全传
-                    img = ims
-                else:
-                    # 差异传
-                    img = img + ims
-                imt = cv2.resize(img, (w, h))
-                imsh = cv2.cvtColor(imt, cv2.COLOR_RGB2RGBA)
-                imi = Image.fromarray(imsh)
-                imgTK.paste(imi)
-            except:
-                self.showcan = None
-                return
+                print("connecting")
+                self.sock.connect(self.beCtrlHost)
+                print("connected")
+                break
+            except Exception as e:
+                print("Could not connect to the client" + str(self.server))
+        header, data = receive_data(self.sock)
+        if header == "accept":
+            lenb = self.sock.recv(5)
+            imtype, le = struct.unpack(">BI", lenb)
+            imb = b''
+            while le > self.bufsize:
+                t = self.sock.recv(self.bufsize)
+                imb += t
+                le -= len(t)
+            while le > 0:
+                t = self.sock.recv(le)
+                imb += t
+                le -= len(t)
+            data = np.frombuffer(imb, dtype=np.uint8)
+            img = cv2.imdecode(data, cv2.IMREAD_COLOR)
+            h, w, _ = img.shape
+            imsh = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)
+            imi = Image.fromarray(imsh)
+            imgTK = ImageTk.PhotoImage(imi)
+            self.showcan = tkinter.Tk()
+            self.showcan.title(self.beCtrlHost[0])
+            cv = tkinter.Canvas(self.showcan, width=w, height=h, bg="white")
+            cv.focus_set()
+            self.BindEvents(cv)
+            cv.pack()
+            cv.create_image(0, 0, anchor=tkinter.NW, image=imgTK)
+            while True:
+                try:
+                    lenb = self.sock.recv(5)
+                    imtype, le = struct.unpack(">BI", lenb)
+                    imb = b''
+                    while le > self.bufsize:
+                        t = self.sock.recv(self.bufsize)
+                        imb += t
+                        le -= len(t)
+                    while le > 0:
+                        t = self.sock.recv(le)
+                        imb += t
+                        le -= len(t)
+                    data = np.frombuffer(imb, dtype=np.uint8)
+                    ims = cv2.imdecode(data, cv2.IMREAD_COLOR)
+                    if imtype == 1:
+                        # 全传
+                        img = ims
+                    else:
+                        # 差异传
+                        img = img + ims
+                    imt = cv2.resize(img, (w, h))
+                    imsh = cv2.cvtColor(imt, cv2.COLOR_RGB2RGBA)
+                    imi = Image.fromarray(imsh)
+                    imgTK.paste(imi)
+                except:
+                    self.showcan = None
+                    return

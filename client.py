@@ -23,8 +23,8 @@ class Client(object):
         self.video_sock = VideoSock((XXIP, XXVIDEOPORT), self.stats)
         self.audio_sock = AudioSock((XXIP, XXAUDIOPORT))
         self.screen_sock = ScreenSock((XXIP, XXSCREEENPORT))
-        self.beCtrlSock = beCtrlSock((self.ip, 5004))
-        self.beCtrlHost = "10.25.10.50:5004"
+        self.beCtrlSock = beCtrlSock(self.stats,(self.ip, BECTRLPORT))
+        # self.beCtrlHost = "10.25.10.50:5004"
         self.ctrlSock = None
         self.room_id: Union[int, None] = None
 
@@ -53,8 +53,9 @@ class Client(object):
     def beControl(self):
         self.beCtrlSock.run()
 
-    def remote_control(self):
-        self.ctrlSock = CtrlSock(self.beCtrlHost)
+    def remote_control(self,beCtrlIp):
+        self.ctrlSock = CtrlSock((str(beCtrlIp),BECTRLPORT))
+        self.ctrlSock.run()
 
     def setup(self):
         self.video_sock.room_id = self.room_id
@@ -62,6 +63,7 @@ class Client(object):
         self.screen_sock.room_id = self.room_id
         self.video_receiving()
         self.audio_receiving()
+        self.beControl()
 
     def create_meeting(self):
         header = b'create room'
