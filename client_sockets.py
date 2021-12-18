@@ -401,7 +401,6 @@ class ScreenSock(object):
         if header == '200 OK':
             # if self.showcan is None:
             #     self.showcan = tkinter.Toplevel(self.root)
-            cv2.namedWindow('Screen', cv2.WINDOW_NORMAL)
             lenb = sock.recv(5)
             imtype, le = struct.unpack(">BI", lenb)
             imb = b''
@@ -419,6 +418,7 @@ class ScreenSock(object):
             imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGBA)
             # imi = Image.fromarray(imsh)
             # imgTK = ImageTk.PhotoImage(image=imi)
+            cv2.namedWindow('Screen', cv2.WINDOW_NORMAL)
             cv2.imshow('Screen', imsh)
             # cv = tkinter.Canvas(self.showcan, width=w, height=h, bg="white")
             # cv.focus_set()
@@ -649,8 +649,8 @@ class beCtrlSock(object):
         self.sock.listen(2)
         while True:
             self.conn, addr = self.sock.accept()
-            print("accept")
-            self.stats.handle_control_msg(addr)
+            # self.stats.handle_control_msg(addr)
+            self.handle_confirm()
             print("accept")
 
     def handle_confirm(self):
@@ -784,6 +784,7 @@ class CtrlSock(object):
         thread = threading.Thread(target=self.startCtrl)
         thread.setDaemon(True)
         thread.start()
+        self.showcan.mainloop()
 
     # def request(self):
     #     self.sock.connect(self.beCtrlHost)
@@ -864,10 +865,10 @@ class CtrlSock(object):
             img = cv2.imdecode(data, cv2.IMREAD_COLOR)
             h, w, _ = img.shape
             imsh = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)
+            # self.BindEvents(cv2.namedWindow('Control', cv2.WINDOW_NORMAL))
+            # cv2.imshow('Control', imsh)
             imi = Image.fromarray(imsh)
             imgTK = ImageTk.PhotoImage(imi)
-            self.showcan = tkinter.Tk()
-            self.showcan.title(self.beCtrlHost[0])
             cv = tkinter.Canvas(self.showcan, width=w, height=h, bg="white")
             cv.focus_set()
             self.BindEvents(cv)
