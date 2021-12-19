@@ -655,38 +655,38 @@ class beCtrlSock(object):
             if key == 1:
                 if op == 100:
                     # 左键按下
-                    # mouse.move(ox, oy)
+                    mouse.move(ox, oy)
                     mouse.press(button=mouse.LEFT)
                 elif op == 117:
                     # 左键弹起
-                    # x, y = mouse.get_position()
-                    # if ox != x or oy != y:
-                    #     if not mouse.is_pressed():
-                    #         mouse.press(button=mouse.LEFT)
-                        # mouse.move(ox, oy)
+                    x, y = mouse.get_position()
+                    if ox != x or oy != y:
+                        if not mouse.is_pressed():
+                            mouse.press(button=mouse.LEFT)
+                        mouse.move(ox, oy)
                     mouse.release(button=mouse.LEFT)
             elif key == 2:
                 # 滚轮事件
                 if op == 0:
                     # 向上
-                    # mouse.move(ox, oy)
+                    mouse.move(ox, oy)
                     mouse.wheel(delta=-1)
                 else:
                     # 向下
-                    # mouse.move(ox, oy)
+                    mouse.move(ox, oy)
                     mouse.wheel(delta=1)
             elif key == 3:
                 # 鼠标右键
                 if op == 100:
                     # 右键按下
-                    # mouse.move(ox, oy)
+                    mouse.move(ox, oy)
                     mouse.press(button=mouse.RIGHT)
                 elif op == 117:
                     # 右键弹起
-                    # mouse.move(ox, oy)
+                    mouse.move(ox, oy)
                     mouse.release(button=mouse.RIGHT)
-            elif key == 4:
-                mouse.move(ox,oy)
+            # elif key == 4:
+            #     mouse.move(ox,oy)
             else:
                 k = self.official_virtual_keys.get(key)
                 if k is not None:
@@ -845,8 +845,8 @@ class CtrlSock(object):
                 EventDo(struct.pack('>BBHH', 2, 0, x, y))
             elif event == cv2.EVENT_MOUSEHWHEEL:
                 EventDo(struct.pack('>BBHH', 2, 1, x, y))
-            elif event == cv2.EVENT_MOUSEMOVE:
-                EventDo(struct.pack('>BBHH', 4, 4, x, y))
+            # elif event == cv2.EVENT_MOUSEMOVE:
+            #     EventDo(struct.pack('>BBHH', 4, 4, x, y))
 
         cv2.setMouseCallback("Control", mouseEvent)
 
