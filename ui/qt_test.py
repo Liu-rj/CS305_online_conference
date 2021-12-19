@@ -221,12 +221,13 @@ class Stats():
         if self.screen_share_button_status == 1:
             self.screen_share_button.setIcon(QIcon('ui/closed_share.png'))
             self.screen_share_button_status = 0
-            self.screen_share_button.setText('Close Sharing')
-            self.client.screen_sharing()
+            self.screen_share_button.setText('Start Sharing')
+            self.client.screen_sock.sharing = False
         else:
             self.screen_share_button.setIcon(QIcon('ui/open_share.png'))
             self.screen_share_button_status = 1
-            self.screen_share_button.setText('Start Sharing')
+            self.screen_share_button.setText('Close Sharing')
+            self.client.screen_sharing()
 
     def handle_screen_control_button(self):
         self.control_window = QMainWindow()

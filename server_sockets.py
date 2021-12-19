@@ -107,7 +107,7 @@ class Meeting(object):
         header = b'clients'
         data = b''
         for client in self.clients:
-            data += f'ip {client[1][0]}\r\n'
+            data += f'ip {client[1][0]}\r\n'.encode()
         data.strip(b'\r\n')
         msg = header + b'\r\n\r\n' + data
         for client in self.clients:
