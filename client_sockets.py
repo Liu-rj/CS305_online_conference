@@ -1,21 +1,17 @@
 import socket
 import threading
 import tkinter
-from typing import Tuple
-
+from typing import Tuple, Union
 import cv2
 import struct
 import pickle
 import zlib
 import numpy as np
 import pyaudio
-# import qtpy
-from PIL import ImageGrab, ImageTk, Image, ImageQt
+from PIL import ImageGrab, ImageTk, Image
 import mouse
 import keyboard
-from PySide2.QtWidgets import *
-from PySide2.QtCore import Qt, QSize
-from PySide2.QtGui import *
+import re
 
 '''
     We provide a base class here.
@@ -76,6 +72,7 @@ class ClientSocket(object):
 
 def receive_data(sock):
     raw_data = sock.recv(2048).decode().split('\r\n\r\n')
+    print(sock, raw_data)
     header = raw_data[0]
     data = raw_data[1]
     return header, data
@@ -94,9 +91,9 @@ def send_data(sock, header, data):
 
 
 class VideoSock(object):
-    def __init__(self, server: Tuple[str, int], stats):
+    def __init__(self, server: Tuple[str, int], client):
         self.server = server
-        self.stats = stats
+        self.client = client
         self.room_id = None
         self.interval = 1
         self.fx = 1 / (self.interval + 1)
@@ -166,9 +163,13 @@ class VideoSock(object):
         send_data(sock, b'receive', 'roomId {}'.format(str(self.room_id)).encode())
         header, data = receive_data(sock)
         if header == '200 OK':
-            data = "".encode("utf-8")
+            data = b''
             payload_size = struct.calcsize("L")
             while self.receiving:
+                # while b'SOF' not in data:
+                #     data += sock.recv(81920)
+                # index = re.search(b'SOF', data).span()
+                # data = data[index[1]:]
                 while len(data) < payload_size:
                     data += sock.recv(81920)
                 ip_size = struct.unpack("L", data[:payload_size])[0]
@@ -182,7 +183,7 @@ class VideoSock(object):
                 msg_size = struct.unpack("L", data[:payload_size])[0]
                 data = data[payload_size:]
                 if msg_size == 0:
-                    self.stats.update_image(ip, None)
+                    self.client.video_update_frame(ip, None)
                     # cv2.destroyWindow(ip)
                     continue
                 while len(data) < msg_size:
@@ -192,7 +193,7 @@ class VideoSock(object):
                 frame_data = zlib.decompress(zframe_data)
                 frame = pickle.loads(frame_data)
                 # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2RGBA)
-                self.stats.update_image(ip, frame)
+                self.client.video_update_frame(ip, frame)
                 # cv2.namedWindow(ip, cv2.WINDOW_NORMAL)
                 # cv2.imshow(ip, frame)
                 # if cv2.waitKey(1) & 0xFF == 27:
@@ -203,7 +204,7 @@ class VideoSock(object):
 class AudioSock(object):
     def __init__(self, server):
         self.server = server
-        self.room_id = None
+        self.room_id: Union[None, int] = None
         self.p = pyaudio.PyAudio()
         self.out_stream = None
         self.in_stream = None
@@ -243,7 +244,7 @@ class AudioSock(object):
                 break
             except:
                 print("Could not connect to the server" + str(self.server))
-        send_data(sock, b'share', 'roomId {}'.format(str(self.room_id)).encode())
+        send_data(sock, b'share', f'roomId {self.room_id}'.encode())
         header, data = receive_data(sock)
         if header == '200 OK':
             self.in_stream = self.p.open(format=FORMAT,
@@ -273,7 +274,8 @@ class AudioSock(object):
                 break
             except:
                 print("Could not connect to the server" + str(self.server))
-        send_data(sock, b'receive', 'roomId {}'.format(str(self.room_id)).encode())
+        print('receiving audio start', self.room_id)
+        send_data(sock, b'receive', f'roomId {self.room_id}'.encode())
         header, data = receive_data(sock)
         if header == '200 OK':
             data = "".encode("utf-8")
@@ -307,14 +309,16 @@ class ScreenSock(object):
         self.room_id = None
         self.img = None
         self.imbyt = None
+        self.showcan = None
         self.bufsize = 10240  # socket缓冲区大小
         self.IMQUALITY = 50  # 压缩比 1-100 数值越小，压缩比越高，图片质量损失越严重
         self.sharing = False
         self.receiving = False
 
     def __del__(self):
-        self.sharing = False
-        self.receiving = False
+        if self.showcan is not None:
+            self.showcan.destroy()
+        pass
 
     def start_sharing(self):
         thread = threading.Thread(target=self.share_screen)
@@ -331,7 +335,6 @@ class ScreenSock(object):
         self.sharing = False
 
     def share_screen(self):
-        self.sharing = True
         print("SCREEN sender starts...")
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         while True:
@@ -353,7 +356,7 @@ class ScreenSock(object):
             lenb = struct.pack(">BI", 1, len(self.imbyt))
             sock.sendall(lenb)
             sock.sendall(self.imbyt)
-            while self.sharing:
+            while True:
                 cv2.waitKey(100)
                 gb = ImageGrab.grab()
                 imgnpn = np.asarray(gb)
@@ -387,7 +390,6 @@ class ScreenSock(object):
         sock.close()
 
     def receive_screen(self):
-        self.receiving = True
         print("SCREEN receiver starts...")
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         while True:
@@ -399,6 +401,9 @@ class ScreenSock(object):
         send_data(sock, b'receive', 'roomId {}'.format(str(self.room_id)).encode())
         header, data = receive_data(sock)
         if header == '200 OK':
+            # if self.showcan is None:
+            #     self.showcan = tkinter.Toplevel(self.root)
+            cv2.namedWindow('Screen', cv2.WINDOW_NORMAL)
             lenb = sock.recv(5)
             imtype, le = struct.unpack(">BI", lenb)
             imb = b''
@@ -412,10 +417,16 @@ class ScreenSock(object):
                 le -= len(t)
             data = np.frombuffer(imb, dtype=np.uint8)
             self.img = cv2.imdecode(data, cv2.IMREAD_COLOR)
-            imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
-            cv2.namedWindow('Screen', cv2.WINDOW_NORMAL)
+            h, w, _ = self.img.shape
+            imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGBA)
+            # imi = Image.fromarray(imsh)
+            # imgTK = ImageTk.PhotoImage(image=imi)
             cv2.imshow('Screen', imsh)
-            while self.receiving:
+            # cv = tkinter.Canvas(self.showcan, width=w, height=h, bg="white")
+            # cv.focus_set()
+            # cv.pack()
+            # cv.create_image(0, 0, anchor=tkinter.NW, image=imgTK)
+            while True:
                 try:
                     lenb = sock.recv(5)
                     imtype, le = struct.unpack(">BI", lenb)
@@ -436,23 +447,26 @@ class ScreenSock(object):
                     else:
                         # 差异传
                         self.img = self.img + ims
-                    imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
+                    imt = cv2.resize(self.img, (w, h))
+                    imsh = cv2.cvtColor(imt, cv2.COLOR_RGB2RGBA)
                     cv2.imshow('Screen', imsh)
+                    # imi = Image.fromarray(imsh)
+                    # imgTK.paste(imi)
+                    if cv2.waitKey(1) & 0xFF == 27:
+                        break
                 except:
+                    self.showcan = None
                     break
         sock.close()
 
 
 class beCtrlSock(object):
 
-    def __init__(self,stats,addr):
+    def __init__(self):
         self.img = None
         self.imbyt = None
-        self.stats = stats
         self.IMQUALITY = 50  # 压缩比 1-100 数值越小，压缩比越高，图片质量损失越严重
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.bind(addr)
-        self.conn = None
         self.official_virtual_keys = {
             0x08: 'backspace',
             0x09: 'tab',
@@ -620,33 +634,14 @@ class beCtrlSock(object):
             0xdc: '\\',
         }
 
-
     def __del__(self):
         self.sock.close()
 
     def run(self):
-        thread = threading.Thread(target=self.wait)
-        thread.setDaemon(True)
-        thread.start()
-
-    def wait(self):
-        print("beCtrl open")
-        self.sock.listen(2)
         while True:
-            self.conn, addr = self.sock.accept()
-            # self.stats.handle_control_msg(addr)
-            self.handle_confirm()
-            print("accept")
-
-    def handle_confirm(self):
-        send_data(self.conn,b'accept',(str(self.conn.getsockname()[0])).encode())
-        threading.Thread(target=self.handle, args=(self.conn,)).start()
-        threading.Thread(target=self.control, args=(self.conn,)).start()
-        #TODO: Bug may exist
-
-    def handle_cancel(self):
-        send_data(self.conn,b'refuse',("").encode())
-        self.conn.close()
+            conn, addr = self.sock.accept()
+            threading.Thread(target=self.handle, args=(conn,)).start()
+            threading.Thread(target=self.control, args=(conn,)).start()
 
     # 读取控制命令，并在本机还原操作
     def control(self, conn):
@@ -685,13 +680,13 @@ class beCtrlSock(object):
                     # 右键弹起
                     mouse.move(ox, oy)
                     mouse.release(button=mouse.RIGHT)
-            # elif key == 4:
-            #     mouse.move(ox,oy)
             else:
                 k = self.official_virtual_keys.get(key)
                 if k is not None:
-                    keyboard.press(k)
-                    keyboard.release(k)
+                    if op == 100:
+                        keyboard.press(k)
+                    elif op == 117:
+                        keyboard.release(k)
 
         try:
             base_len = 6
@@ -703,10 +698,8 @@ class beCtrlSock(object):
                     rest -= len(cmd)
                 key = cmd[0]
                 op = cmd[1]
-                # x = struct.unpack('>H', cmd[2:4])[0]
-                # y = struct.unpack('>H', cmd[4:6])[0]
-                x = cmd[2]
-                y = cmd[3]
+                x = struct.unpack('>H', cmd[2:4])[0]
+                y = struct.unpack('>H', cmd[4:6])[0]
                 Op(key, op, x, y)
         except:
             return
@@ -721,9 +714,8 @@ class beCtrlSock(object):
         lenb = struct.pack(">BI", 1, len(self.imbyt))
         conn.sendall(lenb)
         conn.sendall(self.imbyt)
-        print("3")
         while True:
-            # cv2.waitKey(0)
+            cv2.waitKey(100)
             gb = ImageGrab.grab()
             imgnpn = np.asarray(gb)
             _, timbyt = cv2.imencode(".jpg", imgnpn, [cv2.IMWRITE_JPEG_QUALITY, self.IMQUALITY])
@@ -752,7 +744,6 @@ class beCtrlSock(object):
                 lenb = struct.pack(">BI", 1, l1)
                 conn.sendall(lenb)
                 conn.sendall(self.imbyt)
-            print("4")
 
 
 class CtrlSock(object):
@@ -761,156 +752,110 @@ class CtrlSock(object):
         self.img = None
         self.imbyt = None
         self.bufsize = 10240  # socket缓冲区大小
+        self.showcan = None
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # hs = beCtrlHost.split(":")
-        # if len(hs) == 2:
-        self.beCtrlHost = beCtrlHost
+        hs = beCtrlHost.split(":")
+        if len(hs) == 2:
+            self.sock.connect((hs[0], int(hs[1])))
+            threading.Thread(target=self.run).start()
 
     def __del__(self):
         self.sock.close()
 
-    def run(self):
-        thread = threading.Thread(target=self.startCtrl)
-        thread.setDaemon(True)
-        thread.start()
-
-    # def request(self):
-    #     self.sock.connect(self.beCtrlHost)
-    #     print("request")
-    #     header, data = receive_data(self.sock)
-    #     if header == "accept":
-    #         self.startCtrl()
-    #     else:
-    #         self.__del__()
-
     # 绑定事件
-    # def BindEvents(self, canvas):
-    #     def EventDo(data):
-    #         self.sock.sendall(data)
-    #
-    #     # 鼠标左键
-    #     def LeftDown(e):
-    #         return EventDo(struct.pack('>BBHH', 1, 100, e.x, e.y))
-    #
-    #     def LeftUp(e):
-    #         return EventDo(struct.pack('>BBHH', 1, 117, e.x, e.y))
-    #
-    #     canvas.bind(sequence="<1>", func=LeftDown)
-    #     canvas.bind(sequence="<ButtonRelease-1>", func=LeftUp)
-    #
-    #     # 鼠标右键
-    #     def RightDown(e):
-    #         return EventDo(struct.pack('>BBHH', 3, 100, e.x, e.y))
-    #
-    #     def RightUp(e):
-    #         return EventDo(struct.pack('>BBHH', 3, 117, e.x, e.y))
-    #
-    #     canvas.bind(sequence="<3>", func=RightDown)
-    #     canvas.bind(sequence="<ButtonRelease-3>", func=RightUp)
-    #
-    #     # 鼠标滚轮
-    #     def Wheel(e):
-    #         if e.delta < 0:
-    #             return EventDo(struct.pack('>BBHH', 2, 0, e.x, e.y))
-    #         else:
-    #             return EventDo(struct.pack('>BBHH', 2, 1, e.x, e.y))
-    #
-    #     canvas.bind(sequence="<MouseWheel>", func=Wheel)
-    #
-    #     # 键盘
-    #     def KeyDown(e):
-    #         return EventDo(struct.pack('>BBHH', e.keycode, 100, e.x, e.y))
-    #
-    #     def KeyUp(e):
-    #         return EventDo(struct.pack('>BBHH', e.keycode, 117, e.x, e.y))
-    #
-    #     canvas.bind(sequence="<KeyPress>", func=KeyDown)
-    #     canvas.bind(sequence="<KeyRelease>", func=KeyUp)
-
-    def BindEvents(self):
-
+    def BindEvents(self, canvas):
         def EventDo(data):
             self.sock.sendall(data)
 
-        def mouseEvent(event, x, y, flags, param):
-            if event == cv2.EVENT_LBUTTONDOWN:
-                EventDo(struct.pack('>BBHH', 1, 100, x, y))
-            elif event == cv2.EVENT_LBUTTONUP:
-                EventDo(struct.pack('>BBHH', 1, 117, x, y))
-            elif event == cv2.EVENT_RBUTTONDOWN:
-                EventDo(struct.pack('>BBHH', 3, 100, x, y))
-            elif event == cv2.EVENT_RBUTTONUP:
-                EventDo(struct.pack('>BBHH', 3, 117, x, y))
-            elif event == cv2.EVENT_MOUSEWHEEL:
-                EventDo(struct.pack('>BBHH', 2, 0, x, y))
-            elif event == cv2.EVENT_MOUSEHWHEEL:
-                EventDo(struct.pack('>BBHH', 2, 1, x, y))
-            # elif event == cv2.EVENT_MOUSEMOVE:
-            #     EventDo(struct.pack('>BBHH', 4, 4, x, y))
+        # 鼠标左键
+        def LeftDown(e):
+            return EventDo(struct.pack('>BBHH', 1, 100, e.x, e.y))
 
-        cv2.setMouseCallback("Control", mouseEvent)
+        def LeftUp(e):
+            return EventDo(struct.pack('>BBHH', 1, 117, e.x, e.y))
 
-    def startCtrl(self):
+        canvas.bind(sequence="<1>", func=LeftDown)
+        canvas.bind(sequence="<ButtonRelease-1>", func=LeftUp)
+
+        # 鼠标右键
+        def RightDown(e):
+            return EventDo(struct.pack('>BBHH', 3, 100, e.x, e.y))
+
+        def RightUp(e):
+            return EventDo(struct.pack('>BBHH', 3, 117, e.x, e.y))
+
+        canvas.bind(sequence="<3>", func=RightDown)
+        canvas.bind(sequence="<ButtonRelease-3>", func=RightUp)
+
+        # 鼠标滚轮
+        def Wheel(e):
+            if e.delta < 0:
+                return EventDo(struct.pack('>BBHH', 2, 0, e.x, e.y))
+            else:
+                return EventDo(struct.pack('>BBHH', 2, 1, e.x, e.y))
+
+        canvas.bind(sequence="<MouseWheel>", func=Wheel)
+
+        # 键盘
+        def KeyDown(e):
+            return EventDo(struct.pack('>BBHH', e.keycode, 100, e.x, e.y))
+
+        def KeyUp(e):
+            return EventDo(struct.pack('>BBHH', e.keycode, 117, e.x, e.y))
+
+        canvas.bind(sequence="<KeyPress>", func=KeyDown)
+        canvas.bind(sequence="<KeyRelease>", func=KeyUp)
+
+    def run(self):
+        lenb = self.sock.recv(5)
+        imtype, le = struct.unpack(">BI", lenb)
+        imb = b''
+        while le > self.bufsize:
+            t = self.sock.recv(self.bufsize)
+            imb += t
+            le -= len(t)
+        while le > 0:
+            t = self.sock.recv(le)
+            imb += t
+            le -= len(t)
+        data = np.frombuffer(imb, dtype=np.uint8)
+        img = cv2.imdecode(data, cv2.IMREAD_COLOR)
+        h, w, _ = img.shape
+        imsh = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)
+        imi = Image.fromarray(imsh)
+        imgTK = ImageTk.PhotoImage(image=imi)
+        if self.showcan is None:
+            self.showcan = tkinter.Tk()
+        cv = tkinter.Canvas(self.showcan, width=w, height=h, bg="white")
+        cv.focus_set()
+        self.BindEvents(cv)
+        cv.pack()
+        cv.create_image(0, 0, anchor=tkinter.NW, image=imgTK)
         while True:
             try:
-                self.sock.connect(self.beCtrlHost)
-                break
-            except Exception as e:
-                print("Could not connect to the client" + str(self.server))
-        header, data = receive_data(self.sock)
-        if header == "accept":
-            lenb = self.sock.recv(5)
-            imtype, le = struct.unpack(">BI", lenb)
-            imb = b''
-            while le > self.bufsize:
-                t = self.sock.recv(self.bufsize)
-                imb += t
-                le -= len(t)
-            while le > 0:
-                t = self.sock.recv(le)
-                imb += t
-                le -= len(t)
-            data = np.frombuffer(imb, dtype=np.uint8)
-            self.img = cv2.imdecode(data, cv2.IMREAD_COLOR)
-            # h, w, _ = img.shape
-            # imsh = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)
-            # imi = Image.fromarray(imsh)
-            # imgTK = ImageTk.PhotoImage(imi)
-            imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
-            cv2.namedWindow('Control', cv2.WINDOW_NORMAL)
-            cv2.imshow('Control', imsh)
-            print("1")
-            self.BindEvents()
-            print("2")
-            while True:
-                try:
-                    lenb = self.sock.recv(5)
-                    imtype, le = struct.unpack(">BI", lenb)
-                    imb = b''
-                    while le > self.bufsize:
-                        t = self.sock.recv(self.bufsize)
-                        imb += t
-                        le -= len(t)
-                    while le > 0:
-                        t = self.sock.recv(le)
-                        imb += t
-                        le -= len(t)
-                    data = np.frombuffer(imb, dtype=np.uint8)
-                    ims = cv2.imdecode(data, cv2.IMREAD_COLOR)
-                    if imtype == 1:
-                        # 全传
-                        self.img = ims
-                    else:
-                        # 差异传
-                        self.img = self.img + ims
-                    imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
-                    cv2.imshow('Control', imsh)
-                    print("5")
-                    keyNum = cv2.waitKey(1)
-                    if 0<=keyNum<=255:
-                        print("6")
-                        self.sock.sendall(struct.pack('>BBHH', hex(keyNum), 100, 0, 0))
-                        # self.sock.sendall(struct.pack('>BBHH', hex(keyNum), 117, 0, 0))
-                except:
-                    break
-            # cv2.destroyAllWindows()
+                lenb = self.sock.recv(5)
+                imtype, le = struct.unpack(">BI", lenb)
+                imb = b''
+                while le > self.bufsize:
+                    t = self.sock.recv(self.bufsize)
+                    imb += t
+                    le -= len(t)
+                while le > 0:
+                    t = self.sock.recv(le)
+                    imb += t
+                    le -= len(t)
+                data = np.frombuffer(imb, dtype=np.uint8)
+                ims = cv2.imdecode(data, cv2.IMREAD_COLOR)
+                if imtype == 1:
+                    # 全传
+                    img = ims
+                else:
+                    # 差异传
+                    img = img + ims
+                imt = cv2.resize(img, (w, h))
+                imsh = cv2.cvtColor(imt, cv2.COLOR_RGB2RGBA)
+                imi = Image.fromarray(imsh)
+                imgTK.paste(imi)
+            except:
+                self.showcan = None
+                return

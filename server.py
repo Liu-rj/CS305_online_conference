@@ -33,7 +33,9 @@ def video_sock_listen():
             sock.send(b'200 OK\r\n\r\n ')
             with shared_lock:
                 if header == 'share':
-                    ServerSocket.rooms[room_id].video_sharing.append((sock, address))
+                    room = ServerSocket.rooms[room_id]
+                    # room.video_sharing.append((sock, address))
+                    threading.Thread(target=room.video_receive, args=(sock,), daemon=True).start()
                 elif header == 'receive':
                     ServerSocket.rooms[room_id].video_receiving.append((sock, address))
         else:  # TODO: if join a non-existing room, what should we do?
@@ -59,6 +61,7 @@ def audio_sock_listen():
             sock.send(b'200 OK\r\n\r\n ')
         else:  # TODO: if join a non-existing room, what should we do?
             pass
+
 
 def screen_sock_listen():
     print('screen socket start listen...')
