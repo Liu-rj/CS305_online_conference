@@ -23,18 +23,18 @@ def video_sock_listen():
     print('video socket start listen...')
     video_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     video_sock.bind((XXIP, XXVIDEOPORT))
-    video_sock.listen(2)
+    video_sock.listen(5)
     while True:
         sock, address = video_sock.accept()
         header, data, _ = receive_data(sock)
+        print(f'video listener receive from {address}, header: {header}, data: {data}')
         room_id = int(data.split(' ')[1])
         if room_id in ServerSocket.rooms.keys():
             print('new video client connect: {} to room {}, action: {}'.format(address, str(room_id), header))
-            sock.send(b'200 OK\r\n\r\n ')
             with shared_lock:
                 if header == 'share':
+                    sock.send(b'200 OK\r\n\r\n ')
                     room = ServerSocket.rooms[room_id]
-                    # room.video_sharing.append((sock, address))
                     threading.Thread(target=room.video_receive, args=(sock,), daemon=True).start()
                 elif header == 'receive':
                     ServerSocket.rooms[room_id].video_receiving.append((sock, address))
@@ -46,19 +46,21 @@ def audio_sock_listen():
     print('audio socket start listen...')
     audio_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     audio_sock.bind((XXIP, XXAUDIOPORT))
-    audio_sock.listen(2)
+    audio_sock.listen(5)
     while True:
         sock, address = audio_sock.accept()
         header, data, _ = receive_data(sock)
+        print(f'audio listener receive from {address}, header: {header}, data: {data}')
         room_id = int(data.split(' ')[1])
         if room_id in ServerSocket.rooms.keys():
             print('new audio client connect: {} to room {}, action: {}'.format(address, str(room_id), header))
             with shared_lock:
                 if header == 'share':
-                    ServerSocket.rooms[room_id].audio_sharing.append((sock, address))
+                    sock.send(b'200 OK\r\n\r\n ')
+                    room = ServerSocket.rooms[room_id]
+                    threading.Thread(target=room.audio_receive, args=(sock,), daemon=True).start()
                 elif header == 'receive':
                     ServerSocket.rooms[room_id].audio_receiving.append((sock, address))
-            sock.send(b'200 OK\r\n\r\n ')
         else:  # TODO: if join a non-existing room, what should we do?
             pass
 
@@ -67,7 +69,7 @@ def screen_sock_listen():
     print('screen socket start listen...')
     screen_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     screen_sock.bind((XXIP, XXSCREEENPORT))
-    screen_sock.listen(2)
+    screen_sock.listen(5)
     while True:
         sock, address = screen_sock.accept()
         header, data, _ = receive_data(sock)
@@ -101,7 +103,7 @@ def main_sock_listen():
     # Bind the address
     sock.bind((XXIP, XXPORT))
     # Socket listen
-    sock.listen(2)
+    sock.listen(5)
     # Start to listen
     while True:
         # Wait for client to connect

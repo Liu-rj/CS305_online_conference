@@ -11,7 +11,6 @@ shared_lock = threading.Lock()
 def receive_data(sock):
     raw_data = sock.recv(2048).decode()
     if not raw_data:
-        sock.close()
         return '', '', False
     raw_data = raw_data.split('\r\n\r\n')
     header = raw_data[0]
@@ -26,16 +25,14 @@ class Meeting(object):
         self.room_id = room_id
         self.video_receiving = []
         self.video_buffer = []
-        self.audio_sharing = []
         self.audio_receiving = []
+        self.audio_buffer = []
         self.screen_sharing = []
         self.screen_receiving = []
 
     def __del__(self):
         for video in self.video_receiving:
             video[0].close()
-        for audio in self.audio_sharing:
-            audio[0].close()
         for audio in self.audio_receiving:
             audio[0].close()
         for screen in self.screen_sharing:
@@ -56,29 +53,26 @@ class Meeting(object):
     def video_receive(self, sock):
         data = b''
         payload_size = struct.calcsize("L")
-        while True:
-            # while b'SOF' not in data:
-            #     data += sock.recv(81920)
-            # index = re.search(b'SOF', data).span()
-            # data = data[index[1]:]
-            while len(data) < payload_size:
-                data += sock.recv(81920)
-                if not data:
-                    print('remove', sock)
-                    sock.close()
-                    return
-            ip_size = struct.unpack("L", data[:payload_size])[0]
-            while len(data[payload_size:]) < ip_size:
-                data += sock.recv(81920)
-            while len(data[payload_size + ip_size:]) < payload_size:
-                data += sock.recv(81920)
-            msg_size = struct.unpack("L", data[payload_size + ip_size:payload_size + ip_size + payload_size])[0]
-            while len(data[payload_size + ip_size + payload_size:]) < msg_size:
-                data += sock.recv(81920)
-            length = payload_size + ip_size + payload_size + msg_size
-            pkt = data[:length]
-            self.video_buffer.append(pkt)
-            data = data[length:]
+        try:
+            while True:
+                while len(data) < payload_size:
+                    data += sock.recv(81920)
+                ip_size = struct.unpack("L", data[:payload_size])[0]
+                while len(data[payload_size:]) < ip_size:
+                    data += sock.recv(81920)
+                while len(data[payload_size + ip_size:]) < payload_size:
+                    data += sock.recv(81920)
+                msg_size = struct.unpack("L", data[payload_size + ip_size:payload_size + ip_size + payload_size])[0]
+                while len(data[payload_size + ip_size + payload_size:]) < msg_size:
+                    data += sock.recv(81920)
+                length = payload_size + ip_size + payload_size + msg_size
+                pkt = data[:length]
+                self.video_buffer.append(pkt)
+                data = data[length:]
+        except socket.error as e:
+            print(e)
+            # print('remove', sock)
+            sock.close()
 
     def video_forward(self):
         while True:
@@ -86,22 +80,44 @@ class Meeting(object):
                 continue
             msg = self.video_buffer.pop(0)
             for other in self.video_receiving:
-                other[0].sendall(msg)
+                try:
+                    other[0].sendall(msg)
+                except socket.error as e:
+                    print(e)
+                    other[0].close()
+                    self.video_receiving.remove(other)
+
+    def audio_receive(self, sock):
+        data = b''
+        payload_size = struct.calcsize("L")
+        try:
+            while True:
+                while len(data) < payload_size:
+                    data += sock.recv(81920)
+                msg_size = struct.unpack("L", data[:payload_size])[0]
+                while len(data[payload_size:]) < msg_size:
+                    data += sock.recv(81920)
+                length = payload_size + msg_size
+                pkt = data[:length]
+                self.audio_buffer.append(pkt)
+                data = data[length:]
+        except socket.error as e:
+            print(e)
+            # print('remove', sock)
+            sock.close()
 
     def audio_forward(self):
         while True:
-            for client in self.audio_sharing:
+            if not self.audio_buffer:
+                continue
+            msg = self.audio_buffer.pop(0)
+            for other in self.audio_receiving:
                 try:
-                    data = client[0].recv(81920)
-                    if data == '':
-                        self.audio_sharing.remove(client)
-                        continue
-                    for other in self.audio_receiving:
-                        if other[1][0] == client[1][0]:
-                            continue
-                        other[0].sendall(data)
-                except:
-                    continue
+                    other[0].sendall(msg)
+                except socket.error as e:
+                    print(e)
+                    other[0].close()
+                    self.audio_receiving.remove(other)
 
     def screen_forward(self):
         while True:
@@ -126,7 +142,11 @@ class Meeting(object):
         data = data.strip(b'\r\n')
         msg = header + b'\r\n\r\n' + data
         for client in self.clients:
-            client[0].send(msg)
+            try:
+                client[0].send(msg)
+            except socket.error as e:
+                client[0].close()
+                self.clients.remove(client)
 
 
 class ServerSocket(threading.Thread):
@@ -148,12 +168,11 @@ class ServerSocket(threading.Thread):
 
     def quit_meeting(self):
         if self.meeting:
-            # print('meeting is not none')
             self.meeting.clients.remove(self.client)
             if not self.meeting.clients:
-                # print(self.meeting.clients)
                 del ServerSocket.rooms[self.meeting.room_id]
             self.meeting = None
+        print(self.client[1], 'quit room, room info:', ServerSocket.rooms)
 
     def run(self):
         # Start listen client action
@@ -161,6 +180,7 @@ class ServerSocket(threading.Thread):
             try:
                 header, data, alive = receive_data(self.sock)
                 if not alive:
+                    print('end of client', self.client[1])
                     return
             except:
                 continue
@@ -184,5 +204,4 @@ class ServerSocket(threading.Thread):
                     ServerSocket.rooms[room_id] = self.meeting
                     self.meeting.broadcast()
             elif header == 'quit room':
-                print(self.client[1], 'quit room')
                 self.quit_meeting()

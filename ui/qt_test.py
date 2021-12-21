@@ -13,7 +13,7 @@ class Stats():
 
     def __init__(self, client=None):
         self.client = client
-        self.window = MainWindow()
+        self.window = MainWindow(client)
         self.window.setFixedSize(1080, 718)
         self.resolution = QGuiApplication.primaryScreen().availableGeometry()
         self.window.move((self.resolution.width() / 2) - (self.window.frameSize().width() / 2),
@@ -320,11 +320,13 @@ class Stats():
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, client):
         super(MainWindow, self).__init__()
+        self.client = client
 
     def closeEvent(self, event):
         print(1)
+        del self.client
         event.accept()
 
 
