@@ -303,14 +303,10 @@ class ScreenSock(object):
         pass
 
     def start_sharing(self):
-        thread = threading.Thread(target=self.share_screen)
-        thread.setDaemon(True)
-        thread.start()
+        threading.Thread(target=self.share_screen, daemon=True).start()
 
     def start_receiving(self):
-        thread = threading.Thread(target=self.receive_screen)
-        thread.setDaemon(True)
-        thread.start()
+        threading.Thread(target=self.receive_screen, daemon=True).start()
 
     def end_receiving(self):
         self.receiving = False

@@ -188,20 +188,20 @@ class ServerSocket(threading.Thread):
                 room_id = int(data.split(' ')[1])
                 if room_id in self.rooms.keys():
                     self.meeting = ServerSocket.rooms[room_id]
-                    self.sock.send('200 OK\r\n\r\nroomId {}'.format(str(room_id)).encode())
                     with shared_lock:
                         self.meeting.add_client(self.client)
+                        self.sock.send('200 OK\r\n\r\nroomId {}'.format(str(room_id)).encode())
                         self.meeting.broadcast()
                 else:  # TODO: if join a non-existing room, what should we do?
                     pass
             elif header == 'create room':
                 room_id = ServerSocket.room_index
-                ServerSocket.room_index += 1
                 self.meeting = Meeting(self.client, room_id)
                 self.meeting.start_meeting()
-                self.sock.send('200 OK\r\n\r\nroomId {}'.format(str(room_id)).encode())
                 with shared_lock:
+                    ServerSocket.room_index += 1
                     ServerSocket.rooms[room_id] = self.meeting
+                    self.sock.send('200 OK\r\n\r\nroomId {}'.format(str(room_id)).encode())
                     self.meeting.broadcast()
             elif header == 'quit room':
                 self.quit_meeting()

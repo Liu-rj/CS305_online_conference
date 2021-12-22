@@ -65,6 +65,7 @@ class Client(object):
         self.screen_sock.room_id = self.room_id
         self.video_receiving()
         self.audio_receiving()
+        self.audio_sharing()
 
     def create_meeting(self):
         header = b'create room'

@@ -29,17 +29,17 @@ def video_sock_listen():
         header, data, _ = receive_data(sock)
         print(f'video listener receive from {address}, header: {header}, data: {data}')
         room_id = int(data.split(' ')[1])
-        if room_id in ServerSocket.rooms.keys():
-            print('new video client connect: {} to room {}, action: {}'.format(address, str(room_id), header))
-            with shared_lock:
+        with shared_lock:
+            if room_id in ServerSocket.rooms.keys():
+                print('new video client connect: {} to room {}, action: {}'.format(address, str(room_id), header))
                 if header == 'share':
                     sock.send(b'200 OK\r\n\r\n ')
                     room = ServerSocket.rooms[room_id]
                     threading.Thread(target=room.video_receive, args=(sock,), daemon=True).start()
                 elif header == 'receive':
                     ServerSocket.rooms[room_id].video_receiving.append((sock, address))
-        else:  # TODO: if join a non-existing room, what should we do?
-            pass
+            else:  # TODO: if join a non-existing room, what should we do?
+                print(f'{address} not pass test, header: {header}, data: {data}, rooms: {ServerSocket.rooms.keys()}')
 
 
 def audio_sock_listen():
@@ -52,17 +52,17 @@ def audio_sock_listen():
         header, data, _ = receive_data(sock)
         print(f'audio listener receive from {address}, header: {header}, data: {data}')
         room_id = int(data.split(' ')[1])
-        if room_id in ServerSocket.rooms.keys():
-            print('new audio client connect: {} to room {}, action: {}'.format(address, str(room_id), header))
-            with shared_lock:
+        with shared_lock:
+            if room_id in ServerSocket.rooms.keys():
+                print('new audio client connect: {} to room {}, action: {}'.format(address, str(room_id), header))
                 if header == 'share':
                     sock.send(b'200 OK\r\n\r\n ')
                     room = ServerSocket.rooms[room_id]
                     threading.Thread(target=room.audio_receive, args=(sock,), daemon=True).start()
                 elif header == 'receive':
                     ServerSocket.rooms[room_id].audio_receiving.append((sock, address))
-        else:  # TODO: if join a non-existing room, what should we do?
-            pass
+            else:  # TODO: if join a non-existing room, what should we do?
+                pass
 
 
 def screen_sock_listen():
@@ -74,16 +74,16 @@ def screen_sock_listen():
         sock, address = screen_sock.accept()
         header, data, _ = receive_data(sock)
         room_id = int(data.split(' ')[1])
-        if room_id in ServerSocket.rooms.keys():
-            print('new screen client connect: {} to room {}, action: {}'.format(address, str(room_id), header))
-            with shared_lock:
+        with shared_lock:
+            if room_id in ServerSocket.rooms.keys():
+                print('new screen client connect: {} to room {}, action: {}'.format(address, str(room_id), header))
                 if header == 'share':
                     ServerSocket.rooms[room_id].screen_sharing.append((sock, address))
                 elif header == 'receive':
                     ServerSocket.rooms[room_id].screen_receiving.append((sock, address))
-            sock.send(b'200 OK\r\n\r\n ')
-        else:  # TODO: if join a non-existing room, what should we do?
-            pass
+                sock.send(b'200 OK\r\n\r\n ')
+            else:  # TODO: if join a non-existing room, what should we do?
+                pass
 
 
 def main_sock_listen():

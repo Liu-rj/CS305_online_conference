@@ -103,7 +103,6 @@ class Stats():
         self.voice_button.setStyleSheet("QToolButton{border:none;color:rgb(0, 0, 0);}"
                                         "QToolButton:hover{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}"
                                         "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
-        self.client.audio_sharing()
 
         self.video_button = QToolButton(self.meeting_window)
         self.video_button.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
