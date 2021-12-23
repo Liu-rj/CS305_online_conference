@@ -322,6 +322,7 @@ class Stats():
     def handle_control_confirm(self):
         self.control_confirm = True
         self.control_window.close()
+        self.client.remote_control(self.to_control_ip)
 
     def handle_control_cancel(self):
         self.control_confirm = False
@@ -340,6 +341,7 @@ class Stats():
         self.cs_group.buttonClicked.connect(self.handle_button_group)
 
     def handle_button_group(self):
+        self.to_control_ip = self.cs_group.checkedButton().text()
         print(self.cs_group.checkedButton().text())
 
     def handle_invite_button(self):

@@ -440,6 +440,7 @@ class beCtrlSock(object):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.bind(addr)
         self.conn = None
+        self.beCtrl = False
         self.official_virtual_keys = {
             0x08: 'backspace',
             0x09: 'tab',
@@ -625,6 +626,7 @@ class beCtrlSock(object):
             print("accept")
 
     def handle_confirm(self):
+        self.beCtrl = True
         send_data(self.conn,b'accept',(str(self.conn.getsockname()[0])).encode())
         threading.Thread(target=self.handle, args=(self.conn,)).start()
         threading.Thread(target=self.control, args=(self.conn,)).start()
@@ -677,8 +679,8 @@ class beCtrlSock(object):
                     keyboard.release(k)
 
         try:
-            base_len = 6
-            while True:
+            base_len = 4
+            while self.beCtrl:
                 cmd = b''
                 rest = base_len - 0
                 while rest > 0:
@@ -690,7 +692,12 @@ class beCtrlSock(object):
                 # y = struct.unpack('>H', cmd[4:6])[0]
                 x = cmd[2]
                 y = cmd[3]
-                Op(key, op, x, y)
+                print(str(key)+" "+str(op)+" "+str(x)+" "+str(y))
+                if key == 0 and op == 0 and x == 0 and y == 0:
+                    self.beCtrl = False
+                    break
+                else:
+                    Op(key, op, x, y)
         except:
             return
 
@@ -704,8 +711,7 @@ class beCtrlSock(object):
         lenb = struct.pack(">BI", 1, len(self.imbyt))
         conn.sendall(lenb)
         conn.sendall(self.imbyt)
-        while True:
-            cv2.waitKey(100)
+        while self.beCtrl:
             gb = ImageGrab.grab()
             imgnpn = np.asarray(gb)
             _, timbyt = cv2.imencode(".jpg", imgnpn, [cv2.IMWRITE_JPEG_QUALITY, self.IMQUALITY])
@@ -787,7 +793,7 @@ class CtrlSock(object):
                 header, data = parse_data(raw_data)
                 break
             except Exception as e:
-                print("Could not connect to the client" + str(self.server))
+                print("Could not connect to the client" + str(self.beCtrlHost))
         if header == "accept":
             lenb = self.sock.recv(5)
             imtype, le = struct.unpack(">BI", lenb)
@@ -832,6 +838,12 @@ class CtrlSock(object):
                     keyNum = cv2.waitKey(1)
                     if 0<=keyNum<=255:
                         self.sock.sendall(struct.pack('>BBHH', hex(keyNum), 100, 0, 0))
+                    #点击窗口按钮关闭窗口
+                    cv2.waitKey(1)
+                    if cv2.getWindowProperty('image', cv2.WND_PROP_VISIBLE) < 1:
+                        self.sock.sendall(struct.pack('>BBHH', 0, 0, 0, 0))
+                        break
                 except:
                     break
-            # cv2.destroyAllWindows()
+            cv2.destroyWindow('Control')
+            self.__del__()

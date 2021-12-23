@@ -126,7 +126,6 @@ class Meeting(object):
                 try:
                     data1 = client[0].recv(5)
                     imtype, le = struct.unpack(">BI", data1)
-                    print(imtype)
                     if imtype == 2:
                         print("someone stop screen sharing!")
                         self.screen_sharing.remove(client)
