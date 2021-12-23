@@ -334,7 +334,6 @@ class ScreenSock(object):
             lenb = struct.pack(">BI", 1, len(self.imbyt))
             sock.sendall(lenb)
             sock.sendall(self.imbyt)
-            print("1")
             while self.sharing:
                 gb = ImageGrab.grab()
                 imgnpn = np.asarray(gb)
@@ -364,7 +363,7 @@ class ScreenSock(object):
                     lenb = struct.pack(">BI", 1, l1)
                     sock.sendall(lenb)
                     sock.sendall(self.imbyt)
-                print("2")
+            sock.sendall(struct.pack(">BI", 2, 0))
         sock.close()
 
     def receive_screen(self):
@@ -381,9 +380,8 @@ class ScreenSock(object):
                 header, data = parse_data(raw_data)
                 break
             except socket.error as e:
-                # print(e)
                 print("Could not connect to the server" + str(self.server))
-        if header == '200 OK':
+        while self.receiving:
             lenb = sock.recv(5)
             imtype, le = struct.unpack(">BI", lenb)
             imb = b''
@@ -400,12 +398,11 @@ class ScreenSock(object):
             imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
             cv2.namedWindow('Screen', cv2.WINDOW_NORMAL)
             cv2.imshow('Screen', imsh)
-            print("3")
-            while self.receiving:
+            cv2.waitKey(10)
+            lenb = sock.recv(5)
+            imtype, le = struct.unpack(">BI", lenb)
+            while imtype != 2:
                 try:
-                    cv2.waitKey(1)
-                    lenb = sock.recv(5)
-                    imtype, le = struct.unpack(">BI", lenb)
                     imb = b''
                     while le > self.bufsize:
                         t = sock.recv(self.bufsize)
@@ -425,9 +422,12 @@ class ScreenSock(object):
                         self.img = self.img + ims
                     imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
                     cv2.imshow('Screen', imsh)
-                    print("4")
+                    cv2.waitKey(10)
+                    lenb = sock.recv(5)
+                    imtype, le = struct.unpack(">BI", lenb)
                 except:
                     break
+            cv2.destroyWindow('Screen')
         sock.close()
 
 
@@ -802,10 +802,6 @@ class CtrlSock(object):
                 le -= len(t)
             data = np.frombuffer(imb, dtype=np.uint8)
             self.img = cv2.imdecode(data, cv2.IMREAD_COLOR)
-            # h, w, _ = img.shape
-            # imsh = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)
-            # imi = Image.fromarray(imsh)
-            # imgTK = ImageTk.PhotoImage(imi)
             imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
             cv2.namedWindow('Control', cv2.WINDOW_NORMAL)
             cv2.imshow('Control', imsh)
@@ -836,7 +832,6 @@ class CtrlSock(object):
                     keyNum = cv2.waitKey(1)
                     if 0<=keyNum<=255:
                         self.sock.sendall(struct.pack('>BBHH', hex(keyNum), 100, 0, 0))
-                        # self.sock.sendall(struct.pack('>BBHH', hex(keyNum), 117, 0, 0))
                 except:
                     break
             # cv2.destroyAllWindows()

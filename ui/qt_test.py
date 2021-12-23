@@ -289,6 +289,7 @@ class Stats():
             self.screen_share_button.setIcon(QIcon('ui/open_share.png'))
             self.screen_share_button_status = 1
             self.screen_share_button.setText('Start Sharing')
+            self.client.stop_screen_sharing()
 
     def handle_screen_control_button(self):
         self.control_window = QMainWindow()

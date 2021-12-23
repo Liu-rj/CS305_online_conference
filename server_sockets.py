@@ -120,17 +120,35 @@ class Meeting(object):
                     self.audio_receiving.remove(other)
 
     def screen_forward(self):
+        bufsize = 81920
         while True:
             for client in self.screen_sharing:
                 try:
-                    data = client[0].recv(81920)
-                    if data == '':
+                    data1 = client[0].recv(5)
+                    imtype, le = struct.unpack(">BI", data1)
+                    print(imtype)
+                    if imtype == 2:
+                        print("someone stop screen sharing!")
                         self.screen_sharing.remove(client)
-                        continue
-                    for other in self.screen_receiving:
-                        if other[1][0] == client[1][0]:
-                            continue
-                        other[0].sendall(data)
+                        for other in self.screen_receiving:
+                            # if other[1][0] == client[1][0]:
+                            #     continue
+                            other[0].sendall(data1)
+                    else:
+                        data2 = b''
+                        while le > bufsize:
+                            t = client[0].recv(bufsize)
+                            data2 += t
+                            le -= len(t)
+                        while le > 0:
+                            t = client[0].recv(le)
+                            data2 += t
+                            le -= len(t)
+                        for other in self.screen_receiving:
+                            # if other[1][0] == client[1][0]:
+                            #     continue
+                            other[0].sendall(data1)
+                            other[0].sendall(data2)
                 except:
                     continue
 

@@ -47,18 +47,21 @@ class Client(object):
     def audio_receiving(self):
         self.audio_sock.start_receiving()
 
+    def stop_screen_sharing(self):
+        self.screen_sock.sharing = False
+
     def screen_sharing(self):
         self.screen_sock.start_sharing()
 
     def screen_receiving(self):
         self.screen_sock.start_receiving()
 
-    # def beControl(self):
-    #     self.beCtrlSock.run()
-    #
-    # def remote_control(self,beCtrlIp):
-    #     self.ctrlSock = CtrlSock((str(beCtrlIp),BECTRLPORT))
-    #     self.ctrlSock.run()
+    def beControl(self):
+        self.beCtrlSock.run()
+
+    def remote_control(self,beCtrlIp):
+        self.ctrlSock = CtrlSock((str(beCtrlIp),BECTRLPORT))
+        self.ctrlSock.run()
 
     def setup(self):
         self.video_sock.room_id = self.room_id
@@ -66,7 +69,7 @@ class Client(object):
         self.screen_sock.room_id = self.room_id
         self.video_receiving()
         self.audio_receiving()
-        # self.audio_sharing()
+        self.audio_sharing()
         self.screen_receiving()
         # self.beControl()
 

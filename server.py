@@ -81,11 +81,12 @@ def screen_sock_listen():
                 if header == 'share':
                     if len(ServerSocket.rooms[room_id].screen_sharing)==0:
                         ServerSocket.rooms[room_id].screen_sharing.append((sock, address))
+                        sock.send(b'200 OK\r\n\r\n ')
                     else:
                         print("There is someone sharing screen!")
                 elif header == 'receive':
                     ServerSocket.rooms[room_id].screen_receiving.append((sock, address))
-                sock.send(b'200 OK\r\n\r\n ')
+                    sock.send(b'200 OK\r\n\r\n ')
             else:  # TODO: if join a non-existing room, what should we do?
                 pass
 
