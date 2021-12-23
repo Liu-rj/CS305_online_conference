@@ -70,11 +70,12 @@ class Stats():
             border-color: navy; /* make the default button prominent */
         }""")
 
-        self.meeting_window = MeetingWindow(self.client, self.window)
-        self.meeting_window.setFixedSize(1200, 900)
-        self.meeting_window.move((self.resolution.width() / 2) - (self.meeting_window.frameSize().width() / 2),
-                                 (self.resolution.height() / 2) - (self.meeting_window.frameSize().height() / 2))
-        self.meeting_window.setWindowTitle('SUSTech Online Meeting')
+        # self.meeting_window = MeetingWindow(self.client, self.window)
+        # self.meeting_window.setFixedSize(1200, 900)
+        # self.meeting_window.move((self.resolution.width() / 2) - (self.meeting_window.frameSize().width() / 2),
+        #                          (self.resolution.height() / 2) - (self.meeting_window.frameSize().height() / 2))
+        # self.meeting_window.setWindowTitle('SUSTech Online Meeting')
+        self.meeting_window: Union[None, MeetingWindow] = None
         self.client_meeting: Union[None, ClientMeeting] = None
 
     def handle_join(self):
@@ -213,8 +214,8 @@ class Stats():
                                                     "QToolButton:hover{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}"
                                                     "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
 
-    def start_client_meeting(self):
-        self.client_meeting = ClientMeeting(self.client.sock, self.client.room_id)
+    def start_client_meeting(self, meeting_window):
+        self.client_meeting = ClientMeeting(self.client, meeting_window)
         self.client_meeting.client_signal.connect(self.update_all_clients)
         self.client_meeting.start()
 
@@ -235,24 +236,24 @@ class Stats():
             self.join_window.close()
             pass
         self.join_window.close()
-        self.start_client_meeting()
         self.meeting_window = MeetingWindow(self.client, self.window)
         self.meeting_window.setFixedSize(1200, 900)
         self.meeting_window.move((self.resolution.width() / 2) - (self.meeting_window.frameSize().width() / 2),
                                  (self.resolution.height() / 2) - (self.meeting_window.frameSize().height() / 2))
         self.meeting_window.setWindowTitle('SUSTech Online Meeting ' + str(self.client.room_id))
         self.init_meeting_window_buttons()
+        self.start_client_meeting(self.meeting_window)
         self.meeting_window.show()
 
     def handle_create(self):
         self.client.create_meeting()
-        self.start_client_meeting()
         self.meeting_window = MeetingWindow(self.client, self.window)
         self.meeting_window.setFixedSize(1200, 900)
         self.meeting_window.move((self.resolution.width() / 2) - (self.meeting_window.frameSize().width() / 2),
                                  (self.resolution.height() / 2) - (self.meeting_window.frameSize().height() / 2))
         self.meeting_window.setWindowTitle('SUSTech Online Meeting ' + str(self.client.room_id))
         self.init_meeting_window_buttons()
+        self.start_client_meeting(self.meeting_window)
         self.meeting_window.show()
         self.window.close()
 
@@ -411,9 +412,10 @@ class Stats():
 
     def handle_more_button_group(self):
         self.more_select_ip = self.more_cs_group.checkedButton().text()
-        #TODO: only host and administrator can show these two buttons
-        self.transfer_button.show()
-        self.assign_button.show()
+        # only host and administrator can show these two buttons
+        if self.client.host:
+            self.transfer_button.show()
+            self.assign_button.show()
         print(self.more_cs_group.checkedButton().text())
 
     def handle_control_msg(self, ip):
@@ -478,11 +480,9 @@ class MeetingWindow(QMainWindow):
         self.client = client
         self.mainwindow = mainwindow
         self.resolution = QGuiApplication.primaryScreen().availableGeometry()
-        #TODO: host and administrator init_super_exit(), others init_normal_exit()
-        self.init_super_exit()
-        # self.init_normal_exit()
-        self.exit = False
-        self.cancel = False
+        self.exit: Union[True, False] = False
+        self.cancel: Union[True, False] = False
+        self.forced: Union[True, False] = False
 
     def init_super_exit(self):
         self.exit_window = QMainWindow(self)
@@ -545,11 +545,13 @@ class MeetingWindow(QMainWindow):
 
     def handle_leave(self):
         self.exit = True
+        self.client.quit_meeting()
         self.exit_window.close()
         self.close()
 
     def handle_end(self):
         self.exit = True
+        self.client.close_meeting()
         self.exit_window.close()
         self.close()
 
@@ -557,10 +559,23 @@ class MeetingWindow(QMainWindow):
         self.cancel = True
         self.exit_window.close()
 
+    def force_quit(self):
+        self.forced = True
+        self.exit = True
+        self.close()
+
     def closeEvent(self, event):
-        self.client.quit_meeting()
-        self.exit_window.show()
+        # host and administrator init_super_exit(), others init_normal_exit()
+        if not self.forced:
+            if self.client.host or self.client.admin:
+                self.init_super_exit()
+            else:
+                self.init_normal_exit()
+            self.exit_window.show()
+        else:
+            self.client.quit_meeting()
         if self.exit:
+            # self.client.quit_meeting()
             self.mainwindow.show()
             self.mainwindow.setClient(self.client)
             event.accept()
@@ -571,15 +586,16 @@ class MeetingWindow(QMainWindow):
 class ClientMeeting(QThread):
     client_signal = pyqtSignal()
 
-    def __init__(self, sock, room_id: int):
+    def __init__(self, client, meeting_window):
         super().__init__()
         self.clients: List[str] = []
-        self.sock = sock
-        self.room_id = room_id
+        self.sock = client.sock
+        self.owner = client
+        self.window = meeting_window
 
     def run(self):
         self.sock.sock.setblocking(False)
-        while self.room_id is not None:
+        while self.owner.room_id is not None:
             try:
                 header, data = self.sock.receive_server_data()
             except:
@@ -592,4 +608,11 @@ class ClientMeeting(QThread):
                     clients_list.append(seg.split(' ')[1])
                 self.clients = clients_list
                 self.client_signal.emit()
+            elif header == 'set':
+                if data == 'host':
+                    self.owner.host = True
+                elif data == 'admin':
+                    self.owner.admin = True
+            elif header == 'close':
+                self.window.force_quit()
         self.sock.sock.setblocking(True)

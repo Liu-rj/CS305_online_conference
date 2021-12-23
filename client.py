@@ -27,6 +27,8 @@ class Client(object):
         self.app = QApplication()
         self.stats = Stats(self)
         self.stats.window.show()
+        self.host: Union[True, False] = False
+        self.admin: Union[True, False] = False
 
     def __del__(self):
         self.sock.close_conn()
@@ -59,8 +61,8 @@ class Client(object):
     def beControl(self):
         self.beCtrlSock.run()
 
-    def remote_control(self,beCtrlIp):
-        self.ctrlSock = CtrlSock((str(beCtrlIp),BECTRLPORT))
+    def remote_control(self, beCtrlIp):
+        self.ctrlSock = CtrlSock((str(beCtrlIp), BECTRLPORT))
         self.ctrlSock.run()
 
     def setup(self):
@@ -73,15 +75,19 @@ class Client(object):
         self.screen_receiving()
         self.beControl()
 
-
     def create_meeting(self):
         header = b'create room'
-        data = b''
+        data = b' '
         self.sock.send_data(header, data)
         header, data = self.sock.receive_server_data()
+        print(header, data)
         if header == '200 OK':
+            reply_header = b'200 OK'
+            reply_data = b' '
+            self.sock.send_data(reply_header, reply_data)
             self.room_id = int(data.split(' ')[1])
             self.setup()
+            self.host = True
             # threading.Thread(target=self.update_all_clients, daemon=True).start()
         else:
             pass
@@ -92,6 +98,9 @@ class Client(object):
         self.sock.send_data(header, data)
         header, data = self.sock.receive_server_data()
         if header == '200 OK':
+            reply_header = b'200 OK'
+            reply_data = b' '
+            self.sock.send_data(reply_header, reply_data)
             self.room_id = int(data.split(' ')[1])
             self.setup()
             # threading.Thread(target=self.update_all_clients, daemon=True).start()
@@ -100,12 +109,43 @@ class Client(object):
             return False
 
     def quit_meeting(self):
-        header = b'quit room'
-        data = b' '
-        self.sock.send_data(header, data)
-        self.video_sock.end_receiving()
-        self.audio_sock.end_receiving()
-        self.screen_sock.end_receiving()
+        if self.room_id is not None:
+            print('enter quit meeting')
+            header = b'quit room'
+            data = b' '
+            self.sock.send_data(header, data)
+            self.video_sock.end_receiving()
+            self.audio_sock.end_receiving()
+            self.screen_sock.end_receiving()
+            self.room_id = None
+            self.host = False
+            self.admin = False
+
+    def close_meeting(self):
+        if self.room_id is not None and (self.host or self.admin):
+            print('enter close meeting')
+            header = b'close room'
+            data = b' '
+            self.sock.send_data(header, data)
+            self.video_sock.end_receiving()
+            self.audio_sock.end_receiving()
+            self.screen_sock.end_receiving()
+            self.room_id = None
+            self.host = False
+            self.admin = False
+
+    def set_admin(self, ip: str):
+        if self.room_id is not None and self.host:
+            header = b'set'
+            data = f'admin:{ip}'.encode()
+            self.sock.send_data(header, data)
+
+    def transfer_host(self, ip: str):
+        if self.room_id is not None and self.host:
+            header = b'set'
+            data = f'host:{ip}'.encode()
+            self.sock.send_data(header, data)
+            self.host = False
 
 
 if __name__ == "__main__":

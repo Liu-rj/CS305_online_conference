@@ -1,6 +1,5 @@
 import socket
 import threading
-import tkinter
 from typing import Tuple, Union
 import cv2
 import struct
@@ -105,12 +104,13 @@ class VideoSock(object):
         threading.Thread(target=self.receive_video, daemon=True).start()
 
     def end_receiving(self):
+        self.room_id = None
         self.receiving = False
         self.sharing = False
 
     def share_video(self):
         self.sharing = True
-        cap = cv2.VideoCapture(0)
+        cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         while True:
             try:
@@ -140,8 +140,8 @@ class VideoSock(object):
                 for i in range(self.interval):
                     cap.read()
         sock.sendall(struct.pack("L", len(ip_b)) + ip_b + struct.pack("L", 0))
-        cap.release()
         sock.close()
+        cap.release()
 
     def receive_video(self):
         self.receiving = True
@@ -210,6 +210,7 @@ class AudioSock(object):
         threading.Thread(target=self.receive_audio, daemon=True).start()
 
     def end_receiving(self):
+        self.room_id = None
         self.receiving = False
         self.sharing = False
 
@@ -306,6 +307,7 @@ class ScreenSock(object):
         threading.Thread(target=self.receive_screen, daemon=True).start()
 
     def end_receiving(self):
+        self.room_id = None
         self.receiving = False
         self.sharing = False
 
@@ -433,7 +435,7 @@ class ScreenSock(object):
 
 class beCtrlSock(object):
 
-    def __init__(self,addr):
+    def __init__(self, addr):
         self.img = None
         self.imbyt = None
         self.IMQUALITY = 50  # 压缩比 1-100 数值越小，压缩比越高，图片质量损失越严重
@@ -627,12 +629,12 @@ class beCtrlSock(object):
 
     def handle_confirm(self):
         self.beCtrl = True
-        send_data(self.conn,b'accept',(str(self.conn.getsockname()[0])).encode())
+        send_data(self.conn, b'accept', (str(self.conn.getsockname()[0])).encode())
         threading.Thread(target=self.handle, args=(self.conn,)).start()
         threading.Thread(target=self.control, args=(self.conn,)).start()
 
     def handle_cancel(self):
-        send_data(self.conn,b'refuse',("").encode())
+        send_data(self.conn, b'refuse', ("").encode())
         self.conn.close()
 
     # 读取控制命令，并在本机还原操作
@@ -692,7 +694,7 @@ class beCtrlSock(object):
                 # y = struct.unpack('>H', cmd[4:6])[0]
                 x = cmd[2]
                 y = cmd[3]
-                print(str(key)+" "+str(op)+" "+str(x)+" "+str(y))
+                print(str(key) + " " + str(op) + " " + str(x) + " " + str(y))
                 if key == 0 and op == 0 and x == 0 and y == 0:
                     self.beCtrl = False
                     break
@@ -838,9 +840,9 @@ class CtrlSock(object):
                     imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
                     cv2.imshow('Control', imsh)
                     keyNum = cv2.waitKey(1)
-                    if 0<=keyNum<=255:
+                    if 0 <= keyNum <= 255:
                         self.sock.sendall(struct.pack('>BBHH', hex(keyNum), 100, 0, 0))
-                    #点击窗口按钮关闭窗口
+                    # 点击窗口按钮关闭窗口
                     cv2.waitKey(1)
                     if cv2.getWindowProperty('Control', cv2.WND_PROP_VISIBLE) < 1:
                         self.sock.sendall(struct.pack('>BBHH', 0, 0, 0, 0))

@@ -1,5 +1,5 @@
 import struct
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 
 from CONSTANTS import *
 import threading
@@ -19,14 +19,14 @@ def receive_data(sock):
 
 
 class Meeting(object):
-    def __init__(self, client, room_id):
+    def __init__(self, service, room_id):
         # initiate the server socket with a client queue
-        self.clients = [client]
+        self.services = [service]
         self.room_id = room_id
         self.video_receiving = []
         self.video_buffer = []
         self.audio_receiving = []
-        self.audio_buffer = []
+        self.audio_buffer: List[Tuple[str, bytes]] = []
         self.screen_sharing = []
         self.screen_receiving = []
 
@@ -39,16 +39,16 @@ class Meeting(object):
             screen[0].close()
         for screen in self.screen_receiving:
             screen[0].close()
-        for client in self.clients:
-            ServerSocket.clients[client].meeting = None
+        for service in self.services:
+            service.meeting = None
 
     def start_meeting(self):
         threading.Thread(target=self.video_forward, daemon=True).start()
         threading.Thread(target=self.audio_forward, daemon=True).start()
         threading.Thread(target=self.screen_forward, daemon=True).start()
 
-    def add_client(self, client):
-        self.clients.append(client)
+    def add_client(self, service):
+        self.services.append(service)
 
     def video_receive(self, sock):
         data = b''
@@ -87,7 +87,7 @@ class Meeting(object):
                     other[0].close()
                     self.video_receiving.remove(other)
 
-    def audio_receive(self, sock):
+    def audio_receive(self, sock, ip):
         data = b''
         payload_size = struct.calcsize("L")
         try:
@@ -99,7 +99,7 @@ class Meeting(object):
                     data += sock.recv(81920)
                 length = payload_size + msg_size
                 pkt = data[:length]
-                self.audio_buffer.append(pkt)
+                self.audio_buffer.append((ip, pkt))
                 data = data[length:]
         except socket.error as e:
             print(e)
@@ -111,9 +111,12 @@ class Meeting(object):
             if not self.audio_buffer:
                 continue
             msg = self.audio_buffer.pop(0)
+            ip, data = msg[0], msg[1]
             for other in self.audio_receiving:
+                if other[1][0] == ip:
+                    continue
                 try:
-                    other[0].sendall(msg)
+                    other[0].sendall(data)
                 except socket.error as e:
                     print(e)
                     other[0].close()
@@ -154,21 +157,40 @@ class Meeting(object):
     def broadcast(self):
         header = b'clients'
         data = b''
-        for client in self.clients:
-            data += f'ip {client[1][0]}\r\n'.encode()
+        for service in self.services:
+            data += f'ip {service.client[1][0]}\r\n'.encode()
         data = data.strip(b'\r\n')
         msg = header + b'\r\n\r\n' + data
-        for client in self.clients:
+        for service in self.services:
             try:
-                client[0].send(msg)
+                service.client[0].send(msg)
             except socket.error as e:
-                client[0].close()
-                self.clients.remove(client)
+                service.client[0].close()
+                self.services.remove(service)
+
+    def set_privilege(self, msg: bytes, ip: str):
+        for service in self.services:
+            if service.client[1][0] == ip:
+                service.client[0].send(msg)
+
+    def close(self, client):
+        header = b'close'
+        data = b' '
+        msg = header + b'\r\n\r\n' + data
+        for service in self.services:
+            try:
+                service.meeting = None
+                if service.client is not client:
+                    service.client[0].send(msg)
+            except socket.error as e:
+                service.client[0].close()
+                self.services.remove(service)
+        del ServerSocket.rooms[self.room_id]
 
 
 class ServerSocket(threading.Thread):
     rooms = {}
-    clients = {}
+    # clients = {}
     room_index = 0
     alive = True
 
@@ -185,11 +207,17 @@ class ServerSocket(threading.Thread):
 
     def quit_meeting(self):
         if self.meeting:
-            self.meeting.clients.remove(self.client)
-            if not self.meeting.clients:
+            self.meeting.services.remove(self)
+            self.meeting.broadcast()
+            if not self.meeting.services:
                 del ServerSocket.rooms[self.meeting.room_id]
             self.meeting = None
         print(self.client[1], 'quit room, room info:', ServerSocket.rooms)
+
+    def close_meeting(self):
+        if self.meeting:
+            self.meeting.close(self.client)
+            self.meeting = None
 
     def run(self):
         # Start listen client action
@@ -206,19 +234,25 @@ class ServerSocket(threading.Thread):
                 if room_id in self.rooms.keys():
                     self.meeting = ServerSocket.rooms[room_id]
                     with shared_lock:
-                        self.meeting.add_client(self.client)
+                        self.meeting.add_service(self)
                         self.sock.send('200 OK\r\n\r\nroomId {}'.format(str(room_id)).encode())
-                        self.meeting.broadcast()
                 else:  # TODO: if join a non-existing room, what should we do?
-                    pass
+                    self.sock.send('403 NotFound\r\n\r\n '.encode())
             elif header == 'create room':
                 room_id = ServerSocket.room_index
-                self.meeting = Meeting(self.client, room_id)
+                self.meeting = Meeting(self, room_id)
                 self.meeting.start_meeting()
                 with shared_lock:
                     ServerSocket.room_index += 1
                     ServerSocket.rooms[room_id] = self.meeting
                     self.sock.send('200 OK\r\n\r\nroomId {}'.format(str(room_id)).encode())
-                    self.meeting.broadcast()
             elif header == 'quit room':
                 self.quit_meeting()
+            elif header == 'close room':
+                self.close_meeting()
+            elif header == 'set':
+                set_type, ip = data.split(':')
+                msg = (header + '\r\n\r\n' + set_type).encode()
+                self.meeting.set_privilege(msg, ip)
+            elif header == '200 OK':
+                self.meeting.broadcast()

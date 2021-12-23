@@ -58,7 +58,7 @@ def audio_sock_listen():
                 if header == 'share':
                     sock.send(b'200 OK\r\n\r\n ')
                     room = ServerSocket.rooms[room_id]
-                    threading.Thread(target=room.audio_receive, args=(sock,), daemon=True).start()
+                    threading.Thread(target=room.audio_receive, args=(sock, address[0]), daemon=True).start()
                 elif header == 'receive':
                     ServerSocket.rooms[room_id].audio_receiving.append((sock, address))
             else:  # TODO: if join a non-existing room, what should we do?
@@ -115,7 +115,7 @@ def main_sock_listen():
         conn, address = sock.accept()
         client = (conn, address)
         server_socket = ServerSocket(client)
-        ServerSocket.clients[client] = server_socket
+        # ServerSocket.clients[client] = server_socket
         server_socket.start()
 
 
