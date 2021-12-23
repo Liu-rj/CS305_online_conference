@@ -73,12 +73,16 @@ def screen_sock_listen():
     while True:
         sock, address = screen_sock.accept()
         header, data, _ = receive_data(sock)
+        print(f'screen listener receive from {address}, header: {header}, data: {data}')
         room_id = int(data.split(' ')[1])
         with shared_lock:
             if room_id in ServerSocket.rooms.keys():
                 print('new screen client connect: {} to room {}, action: {}'.format(address, str(room_id), header))
                 if header == 'share':
-                    ServerSocket.rooms[room_id].screen_sharing.append((sock, address))
+                    if len(ServerSocket.rooms[room_id].screen_sharing)==0:
+                        ServerSocket.rooms[room_id].screen_sharing.append((sock, address))
+                    else:
+                        print("There is someone sharing screen!")
                 elif header == 'receive':
                     ServerSocket.rooms[room_id].screen_receiving.append((sock, address))
                 sock.send(b'200 OK\r\n\r\n ')

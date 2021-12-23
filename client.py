@@ -20,8 +20,8 @@ class Client(object):
         self.video_sock = VideoSock((XXIP, XXVIDEOPORT), self)
         self.audio_sock = AudioSock((XXIP, XXAUDIOPORT))
         self.screen_sock = ScreenSock((XXIP, XXSCREEENPORT))
-        self.beCtrlSock = beCtrlSock()
-        self.beCtrlHost = "10.25.10.50:80"
+        self.beCtrlSock = beCtrlSock((self.ip, BECTRLPORT))
+        # self.beCtrlHost = "10.25.10.50:80"
         self.ctrlSock = None
         self.room_id: Union[int, None] = None
         self.app = QApplication()
@@ -53,11 +53,12 @@ class Client(object):
     def screen_receiving(self):
         self.screen_sock.start_receiving()
 
-    def beControl(self):
-        self.beCtrlSock.run()
-
-    def remote_control(self):
-        self.ctrlSock = CtrlSock(self.beCtrlHost)
+    # def beControl(self):
+    #     self.beCtrlSock.run()
+    #
+    # def remote_control(self,beCtrlIp):
+    #     self.ctrlSock = CtrlSock((str(beCtrlIp),BECTRLPORT))
+    #     self.ctrlSock.run()
 
     def setup(self):
         self.video_sock.room_id = self.room_id
@@ -65,7 +66,10 @@ class Client(object):
         self.screen_sock.room_id = self.room_id
         self.video_receiving()
         self.audio_receiving()
-        self.audio_sharing()
+        # self.audio_sharing()
+        self.screen_receiving()
+        # self.beControl()
+
 
     def create_meeting(self):
         header = b'create room'
