@@ -733,13 +733,15 @@ class beCtrlSock(object):
             if l1 > l2:
                 # 传差异化图像
                 lenb = struct.pack(">BI", 0, l2)
-                conn.sendall(lenb)
-                conn.sendall(imb)
+                if self.beCtrl:
+                    conn.sendall(lenb)
+                    conn.sendall(imb)
             else:
                 # 传原编码图像
                 lenb = struct.pack(">BI", 1, l1)
-                conn.sendall(lenb)
-                conn.sendall(self.imbyt)
+                if self.beCtrl:
+                    conn.sendall(lenb)
+                    conn.sendall(self.imbyt)
 
 
 class CtrlSock(object):
@@ -840,10 +842,8 @@ class CtrlSock(object):
                         self.sock.sendall(struct.pack('>BBHH', hex(keyNum), 100, 0, 0))
                     #点击窗口按钮关闭窗口
                     cv2.waitKey(1)
-                    if cv2.getWindowProperty('image', cv2.WND_PROP_VISIBLE) < 1:
+                    if cv2.getWindowProperty('Control', cv2.WND_PROP_VISIBLE) < 1:
                         self.sock.sendall(struct.pack('>BBHH', 0, 0, 0, 0))
                         break
                 except:
                     break
-            cv2.destroyWindow('Control')
-            self.__del__()
