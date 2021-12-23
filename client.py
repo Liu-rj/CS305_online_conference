@@ -71,7 +71,7 @@ class Client(object):
         self.audio_receiving()
         self.audio_sharing()
         self.screen_receiving()
-        # self.beControl()
+        self.beControl()
 
 
     def create_meeting(self):
