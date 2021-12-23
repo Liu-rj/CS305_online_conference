@@ -223,16 +223,17 @@ class Stats():
         meeting_id = self.join_window.text()
         if not self.client.join_meeting(meeting_id):
             print("cannot join")
-            # self.cannot_join_window = QLineEdit()
-            # self.cannot_join_window.setPlaceholderText('Incorrect meeting id')
-            # self.cannot_join_window.setStyleSheet("color: blue;"
-            #                                       "background-color: yellow;"
-            #                                       "selection-color: yellow;"
-            #                                       "selection-background-color: blue;")
-            # self.cannot_join_window.setFixedSize(QSize(400, 50))
-            # self.cannot_join_window.setWindowTitle('Error!')
-            # self.cannot_join_window.setFont(QFont("Times New Roman", 18))
-            # self.cannot_join_window.show()
+            self.cannot_join_window = QLineEdit()
+            self.cannot_join_window.setPlaceholderText('Incorrect meeting id')
+            self.cannot_join_window.setStyleSheet("color: blue;"
+                                                  "background-color: yellow;"
+                                                  "selection-color: yellow;"
+                                                  "selection-background-color: blue;")
+            self.cannot_join_window.setFixedSize(QSize(400, 50))
+            self.cannot_join_window.setWindowTitle('Error!')
+            self.cannot_join_window.setFont(QFont("Times New Roman", 18))
+            self.cannot_join_window.setEnabled(False)
+            self.cannot_join_window.show()
             self.join_window.close()
         else:
             self.join_window.close()
