@@ -232,18 +232,19 @@ class Stats():
             self.cannot_join_window.setFixedSize(QSize(400, 50))
             self.cannot_join_window.setWindowTitle('Error!')
             self.cannot_join_window.setFont(QFont("Times New Roman", 18))
+            self.cannot_join_window.setEnabled(False)
             self.cannot_join_window.show()
             self.join_window.close()
-            pass
-        self.join_window.close()
-        self.meeting_window = MeetingWindow(self.client, self.window)
-        self.meeting_window.setFixedSize(1200, 900)
-        self.meeting_window.move((self.resolution.width() / 2) - (self.meeting_window.frameSize().width() / 2),
+        else:
+            self.join_window.close()
+            self.meeting_window = MeetingWindow(self.client, self.window)
+            self.meeting_window.setFixedSize(1200, 900)
+            self.meeting_window.move((self.resolution.width() / 2) - (self.meeting_window.frameSize().width() / 2),
                                  (self.resolution.height() / 2) - (self.meeting_window.frameSize().height() / 2))
-        self.meeting_window.setWindowTitle('SUSTech Online Meeting ' + str(self.client.room_id))
-        self.init_meeting_window_buttons()
-        self.start_client_meeting(self.meeting_window)
-        self.meeting_window.show()
+            self.meeting_window.setWindowTitle('SUSTech Online Meeting ' + str(self.client.room_id))
+            self.init_meeting_window_buttons()
+            self.start_client_meeting(self.meeting_window)
+            self.meeting_window.show()
 
     def handle_create(self):
         self.client.create_meeting()
