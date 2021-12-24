@@ -47,7 +47,7 @@ class Meeting(object):
         threading.Thread(target=self.audio_forward, daemon=True).start()
         threading.Thread(target=self.screen_forward, daemon=True).start()
 
-    def add_client(self, service):
+    def add_service(self, service):
         self.services.append(service)
 
     def video_receive(self, sock):
