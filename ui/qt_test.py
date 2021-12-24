@@ -393,9 +393,11 @@ class Stats():
         self.more_window.show()
 
     def handle_transfer_button(self):
+        self.client.transfer_host(self.more_select_ip)
         self.more_window.close()
 
     def handle_assign_button(self):
+        self.client.set_admin(self.more_select_ip)
         self.more_window.close()
 
     def init_more_list(self):
@@ -438,8 +440,8 @@ class Stats():
         clients = self.client_meeting.clients
         num = len(clients)
         try:
-            for i in range(len(self.all_frames)):
-                del self.all_frames[i]
+            for i in self.all_frames.keys():
+                self.all_frames[i].hide()
         except:
             pass
         self.all_frames = {}
