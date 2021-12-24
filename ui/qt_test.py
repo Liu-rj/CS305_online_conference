@@ -10,6 +10,8 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QThread
 from PyQt5 import QtWidgets
 
+import threading
+lock = threading.Lock()
 
 class Stats():
 
@@ -435,7 +437,11 @@ class Stats():
     def update_all_clients(self):
         clients = self.client_meeting.clients
         num = len(clients)
-        print(num)
+        try:
+            for i in range(len(self.all_frames)):
+                del self.all_frames[i]
+        except:
+            pass
         self.all_frames = {}
         for i in range(num):
             frame = QLabel(self.meeting_window)
@@ -461,8 +467,10 @@ class Stats():
             frame = Image.open('ui/user.png')
             frame = frame.resize((380, 380), Image.ANTIALIAS)
             pix = QPixmap.fromImage(ImageQt(frame).copy())
-        self.all_frames[ip].setPixmap(pix)
-
+        try:
+            self.all_frames[ip].setPixmap(pix)
+        except :
+            pass
 
 class MainWindow(QMainWindow):
     def __init__(self, client):
