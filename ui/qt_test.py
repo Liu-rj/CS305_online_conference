@@ -1,3 +1,4 @@
+import time
 from typing import List, Union
 import cv2
 from PySide2.QtWidgets import *
@@ -434,6 +435,7 @@ class Stats():
     def update_all_clients(self):
         clients = self.client_meeting.clients
         num = len(clients)
+        print(num)
         self.all_frames = {}
         for i in range(num):
             frame = QLabel(self.meeting_window)
@@ -484,9 +486,10 @@ class MeetingWindow(QMainWindow):
         self.exit: Union[True, False] = False
         self.cancel: Union[True, False] = False
         self.forced: Union[True, False] = False
+        self.again_exit: Union[True, False] = False
 
     def init_super_exit(self):
-        self.exit_window = QMainWindow(self)
+        self.exit_window = QMainWindow()
         self.exit_window.setFixedSize(440, 70)
         self.exit_window.move((self.resolution.width() / 2) - (self.exit_window.frameSize().width() / 2),
                                  (self.resolution.height() / 2) - (self.exit_window.frameSize().height() / 2))
@@ -520,7 +523,7 @@ class MeetingWindow(QMainWindow):
         self.exit_cancel_button.clicked.connect(self.handle_cancel)
 
     def init_normal_exit(self):
-        self.exit_window = QMainWindow(self)
+        self.exit_window = QMainWindow()
         self.exit_window.setFixedSize(280, 70)
         self.exit_window.move((self.resolution.width() / 2) - (self.exit_window.frameSize().width() / 2),
                               (self.resolution.height() / 2) - (self.exit_window.frameSize().height() / 2))
@@ -548,12 +551,14 @@ class MeetingWindow(QMainWindow):
         self.exit = True
         self.client.quit_meeting()
         self.exit_window.close()
+        self.again_exit = True
         self.close()
 
     def handle_end(self):
         self.exit = True
         self.client.close_meeting()
         self.exit_window.close()
+        self.again_exit = True
         self.close()
 
     def handle_cancel(self):
@@ -567,14 +572,15 @@ class MeetingWindow(QMainWindow):
 
     def closeEvent(self, event):
         # host and administrator init_super_exit(), others init_normal_exit()
-        if not self.forced:
-            if self.client.host or self.client.admin:
-                self.init_super_exit()
+        if not self.again_exit:
+            if not self.forced:
+                if self.client.host or self.client.admin:
+                    self.init_super_exit()
+                else:
+                    self.init_normal_exit()
+                self.exit_window.show()
             else:
-                self.init_normal_exit()
-            self.exit_window.show()
-        else:
-            self.client.quit_meeting()
+                self.client.quit_meeting()
         if self.exit:
             # self.client.quit_meeting()
             self.mainwindow.show()
