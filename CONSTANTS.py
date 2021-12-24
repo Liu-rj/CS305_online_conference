@@ -12,9 +12,9 @@ MAIN = 1
 MEETING = 2
 
 # Server IP
-# XXIP = '10.26.139.226'
+XXIP = '10.26.139.226'
 # XXIP = '10.15.201.102'
-XXIP = '10.15.215.4'
+# XXIP = '10.15.215.4'
 # XXIP = '127.0.0.1'
 
 # Server ports

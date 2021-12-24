@@ -9,7 +9,7 @@ import mouse
 
 bufsize = 1024
 
-host = ('10.26.139.226', 80)
+host = ('10.15.215.4', 80)
 soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 soc.bind(host)
 soc.listen(1)

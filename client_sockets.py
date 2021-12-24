@@ -732,18 +732,23 @@ class beCtrlSock(object):
             _, imb = cv2.imencode(".png", imgs)
             l1 = len(self.imbyt)  # 原图像大小
             l2 = len(imb)  # 差异图像大小
-            if l1 > l2:
-                # 传差异化图像
-                lenb = struct.pack(">BI", 0, l2)
-                if self.beCtrl:
-                    conn.sendall(lenb)
-                    conn.sendall(imb)
-            else:
-                # 传原编码图像
-                lenb = struct.pack(">BI", 1, l1)
-                if self.beCtrl:
-                    conn.sendall(lenb)
-                    conn.sendall(self.imbyt)
+            try:
+                if l1 > l2:
+                    # 传差异化图像
+                    lenb = struct.pack(">BI", 0, l2)
+                    if self.beCtrl:
+                        conn.sendall(lenb)
+                        conn.sendall(imb)
+                else:
+                    # 传原编码图像
+                    lenb = struct.pack(">BI", 1, l1)
+                    if self.beCtrl:
+                        conn.sendall(lenb)
+                        conn.sendall(self.imbyt)
+            except socket.error as e:
+                print(e)
+                conn.close()
+                return
 
 
 class CtrlSock(object):

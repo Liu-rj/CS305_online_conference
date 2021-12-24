@@ -133,8 +133,8 @@ class Meeting(object):
                         print("someone stop screen sharing!")
                         self.screen_sharing.remove(client)
                         for other in self.screen_receiving:
-                            # if other[1][0] == client[1][0]:
-                            #     continue
+                            if other[1][0] == client[1][0]:
+                                continue
                             other[0].sendall(data1)
                     else:
                         data2 = b''
@@ -147,8 +147,8 @@ class Meeting(object):
                             data2 += t
                             le -= len(t)
                         for other in self.screen_receiving:
-                            # if other[1][0] == client[1][0]:
-                            #     continue
+                            if other[1][0] == client[1][0]:
+                                continue
                             other[0].sendall(data1)
                             other[0].sendall(data2)
                 except:
