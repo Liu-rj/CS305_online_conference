@@ -393,9 +393,11 @@ class Stats():
         self.more_window.show()
 
     def handle_transfer_button(self):
+        self.client.transfer_host(self.more_select_ip)
         self.more_window.close()
 
     def handle_assign_button(self):
+        self.client.set_admin(self.more_select_ip)
         self.more_window.close()
 
     def init_more_list(self):
@@ -439,8 +441,6 @@ class Stats():
         num = len(clients)
         try:
             for i in self.all_frames.keys():
-                # print("delete ", end='')
-                # print(self.all_frames[i])
                 self.all_frames[i].hide()
         except:
             pass
@@ -626,7 +626,6 @@ class ClientMeeting(QThread):
                 self.clients = clients_list
                 self.client_signal.emit()
             elif header == 'set':
-                print('receive set command')
                 if data == 'host':
                     self.owner.host = True
                 elif data == 'admin':
