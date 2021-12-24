@@ -438,8 +438,10 @@ class Stats():
         clients = self.client_meeting.clients
         num = len(clients)
         try:
-            for i in range(len(self.all_frames)):
-                del self.all_frames[i]
+            for i in self.all_frames.keys():
+                # print("delete ", end='')
+                # print(self.all_frames[i])
+                self.all_frames[i].hide()
         except:
             pass
         self.all_frames = {}
@@ -624,6 +626,7 @@ class ClientMeeting(QThread):
                 self.clients = clients_list
                 self.client_signal.emit()
             elif header == 'set':
+                print('receive set command')
                 if data == 'host':
                     self.owner.host = True
                 elif data == 'admin':
