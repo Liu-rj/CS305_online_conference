@@ -859,3 +859,4 @@ class CtrlSock(object):
                     #     break
                 except:
                     break
+            cv2.destroyWindow('Control')
