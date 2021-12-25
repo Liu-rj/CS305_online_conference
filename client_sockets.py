@@ -562,11 +562,11 @@ class beCtrlSock(object):
                 # 滚轮事件
                 if op == 0:
                     # 向上
-                    # mouse.move(ox, oy)
+                    mouse.move(ox, oy)
                     mouse.wheel(delta=-1)
                 else:
                     # 向下
-                    # mouse.move(ox, oy)
+                    mouse.move(ox, oy)
                     mouse.wheel(delta=1)
             elif key == 3:
                 # 鼠标右键
@@ -584,6 +584,7 @@ class beCtrlSock(object):
                 print(str(key) + " " + str(op) + " " + str(ox) + " " + str(oy))
                 k = official_virtual_keys.get(key)
                 if k is not None:
+                    print(k)
                     keyboard.press(k)
                     # keyboard.release(k)
 
@@ -744,14 +745,16 @@ class CtrlSock(object):
                         self.img = self.img + ims
                     imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
                     cv2.imshow('Control', imsh)
-                    keyNum = cv2.waitKey(10) & 0xFF
+                    keyNum = cv2.waitKey(10)
                     if keyNum == 27:
                         print(str(keyNum)+" "+str(hex(keyNum)))
                         self.sock.sendall(struct.pack('>BBHH', 0, 0, 0, 0))
-                        break
+                        print(str(keyNum)+" "+str(hex(keyNum)))
                     elif 0 <= keyNum <= 255:
                         print(str(keyNum)+" "+str(hex(keyNum)))
-                        self.sock.sendall(struct.pack('>BBHH', hex(keyNum), 100, 0, 0))
-                except:
+                        self.sock.sendall(struct.pack('>BBHH', keyNum, 100, 0, 0))
+                        print(str(keyNum)+" "+str(hex(keyNum)))
+                except Exception as e:
+                    print(e)
                     break
         cv2.destroyWindow('Control')
