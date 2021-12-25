@@ -247,6 +247,7 @@ class Stats():
             self.meeting_window.setWindowTitle('SUSTech Online Meeting ' + str(self.client.room_id))
             self.init_meeting_window_buttons()
             self.start_client_meeting(self.meeting_window)
+            self.window.close()
             self.meeting_window.show()
 
     def handle_create(self):
