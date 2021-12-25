@@ -431,11 +431,11 @@ class Stats():
         self.control_msg_window.show()
 
     def handle_be_control_confirm(self):
-        self.client.sock.handle_confirm()
+        self.client.beCtrlSock.handle_confirm()
         self.control_msg_window.close()
 
     def handle_be_control_cancel(self):
-        self.client.sock.handle_cancel()
+        self.client.beCtrlSock.handle_cancel()
         self.control_msg_window.close()
 
     def update_all_clients(self):
@@ -604,7 +604,7 @@ class MeetingWindow(QMainWindow):
 
 class ClientMeeting(QThread):
     client_signal = pyqtSignal()
-    ctrl_signal = pyqtSignal()
+    ctrl_signal = pyqtSignal(str)
 
     def __init__(self, client, meeting_window):
         super().__init__()

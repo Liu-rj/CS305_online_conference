@@ -458,10 +458,10 @@ class beCtrlSock(object):
         self.sock.listen(2)
         while True:
             self.conn, addr = self.sock.accept()
-            self.owner.stats.client_meeting.ctrl_signal.emit(addr)
+            self.owner.stats.client_meeting.ctrl_signal.emit(addr[0])
             # self.stats.handle_control_msg(addr)
             # self.handle_confirm()
-            print("accept")
+            # print("accept")
 
     def handle_confirm(self):
         self.beCtrl = True
@@ -469,9 +469,9 @@ class beCtrlSock(object):
         threading.Thread(target=self.handle, args=(self.conn,)).start()
         threading.Thread(target=self.control, args=(self.conn,)).start()
 
-    # def handle_cancel(self):
-    #     send_data(self.conn, b'refuse', ("").encode())
-    #     self.conn.close()
+    def handle_cancel(self):
+        send_data(self.conn, b'refuse', ("").encode())
+        self.conn.close()
 
     # 读取控制命令，并在本机还原操作
     def control(self, conn):
@@ -655,6 +655,7 @@ class beCtrlSock(object):
                 print(e)
                 conn.close()
                 return
+        conn.close()
 
 
 class CtrlSock(object):
@@ -759,4 +760,6 @@ class CtrlSock(object):
                         self.sock.sendall(struct.pack('>BBHH', keyNum, 100, 0, 0))
                 except Exception as e:
                     break
-        cv2.destroyWindow('Control')
+            cv2.destroyWindow('Control')
+        elif header == "refuse":
+            print("he refuse to beControl")
