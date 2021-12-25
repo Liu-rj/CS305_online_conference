@@ -677,6 +677,7 @@ class beCtrlSock(object):
             elif key == 4 and op == 4:
                 mouse.move(ox, oy)
             else:
+                print(str(key) + " " + str(op) + " " + str(ox) + " " + str(oy))
                 k = self.official_virtual_keys.get(key)
                 if k is not None:
                     keyboard.press(k)
@@ -694,7 +695,6 @@ class beCtrlSock(object):
                 op = cmd[1]
                 x = struct.unpack('>H', cmd[2:4])[0]
                 y = struct.unpack('>H', cmd[4:6])[0]
-                print(str(key) + " " + str(op) + " " + str(x) + " " + str(y))
                 if key == 0 and op == 0 and x == 0 and y == 0:
                     self.beCtrl = False
                     break
