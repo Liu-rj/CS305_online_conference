@@ -782,8 +782,9 @@ class CtrlSock(object):
             elif event == cv2.EVENT_RBUTTONUP:
                 EventDo(struct.pack('>BBHH', 3, 117, x, y))
             elif event == cv2.EVENT_MOUSEWHEEL:
-                value = getMouseWheelDelta(flags)
-                if value > 0:
+                # value = getMouseWheelDelta(flags)
+                print(flags)
+                if flags > 0:
                     EventDo(struct.pack('>BBHH', 2, 0, x, y))
                 else:
                     EventDo(struct.pack('>BBHH', 2, 1, x, y))
@@ -845,12 +846,16 @@ class CtrlSock(object):
                     imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
                     cv2.imshow('Control', imsh)
                     keyNum = cv2.waitKey(1)
-                    if 0 <= keyNum <= 255:
-                        self.sock.sendall(struct.pack('>BBHH', hex(keyNum), 100, 0, 0))
-                    # 点击窗口按钮关闭窗口
-                    cv2.waitKey(1)
-                    if cv2.getWindowProperty('Control', cv2.WND_PROP_VISIBLE) < 1:
+                    if keyNum == 27:
                         self.sock.sendall(struct.pack('>BBHH', 0, 0, 0, 0))
                         break
+                    elif 0 <= keyNum <= 255:
+                        print(hex(keyNum))
+                        self.sock.sendall(struct.pack('>BBHH', hex(keyNum), 100, 0, 0))
+                    # 点击窗口按钮关闭窗口
+                    # cv2.waitKey(1)
+                    # if cv2.getWindowProperty('Control', cv2.WND_PROP_VISIBLE) < 1:
+                    #     self.sock.sendall(struct.pack('>BBHH', 0, 0, 0, 0))
+                    #     break
                 except:
                     break
