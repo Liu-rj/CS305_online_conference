@@ -644,35 +644,35 @@ class beCtrlSock(object):
             if key == 1:
                 if op == 100:
                     # 左键按下
-                    mouse.move(ox, oy)
+                    # mouse.move(ox, oy)
                     mouse.press(button=mouse.LEFT)
                 elif op == 117:
                     # 左键弹起
-                    x, y = mouse.get_position()
-                    if ox != x or oy != y:
-                        if not mouse.is_pressed():
-                            mouse.press(button=mouse.LEFT)
-                        mouse.move(ox, oy)
+                    # x, y = mouse.get_position()
+                    # if ox != x or oy != y:
+                    #     if not mouse.is_pressed():
+                    #         mouse.press(button=mouse.LEFT)
+                    #     mouse.move(ox, oy)
                     mouse.release(button=mouse.LEFT)
             elif key == 2:
                 # 滚轮事件
                 if op == 0:
                     # 向上
-                    mouse.move(ox, oy)
+                    # mouse.move(ox, oy)
                     mouse.wheel(delta=-1)
                 else:
                     # 向下
-                    mouse.move(ox, oy)
+                    # mouse.move(ox, oy)
                     mouse.wheel(delta=1)
             elif key == 3:
                 # 鼠标右键
                 if op == 100:
                     # 右键按下
-                    mouse.move(ox, oy)
+                    # mouse.move(ox, oy)
                     mouse.press(button=mouse.RIGHT)
                 elif op == 117:
                     # 右键弹起
-                    mouse.move(ox, oy)
+                    # mouse.move(ox, oy)
                     mouse.release(button=mouse.RIGHT)
             elif key == 4 and op == 4:
                 mouse.move(ox, oy)
@@ -841,11 +841,12 @@ class CtrlSock(object):
                     imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
                     cv2.imshow('Control', imsh)
                     keyNum = cv2.waitKey(10) & 0xFF
-                    print(hex(keyNum))
                     if keyNum == 27:
+                        print(str(keyNum)+" "+str(hex(keyNum)))
                         self.sock.sendall(struct.pack('>BBHH', 0, 0, 0, 0))
                         break
-                    else:
+                    elif 0 <= keyNum <= 255:
+                        print(str(keyNum)+" "+str(hex(keyNum)))
                         self.sock.sendall(struct.pack('>BBHH', hex(keyNum), 100, 0, 0))
                     # 点击窗口按钮关闭窗口
                     # cv2.waitKey(1)
