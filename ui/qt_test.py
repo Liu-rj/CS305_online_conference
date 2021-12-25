@@ -438,6 +438,19 @@ class Stats():
         self.client.beCtrlSock.handle_cancel()
         self.control_msg_window.close()
 
+    def to_control_denied(self, ip):
+        self.deny_window = QLineEdit()
+        self.deny_window.setText(ip + ' denied your request!')
+        self.deny_window.setStyleSheet("color: blue;"
+                                         "background-color: yellow;"
+                                         "selection-color: yellow;"
+                                         "selection-background-color: blue;")
+        self.deny_window.setFixedSize(QSize(300, 50))
+        self.deny_window.setWindowTitle('Meeting Info')
+        self.deny_window.setFont(QFont("Times New Roman", 18))
+        self.deny_window.setEnabled(False)
+        self.deny_window.show()
+
     def update_all_clients(self):
         clients = self.client_meeting.clients
         num = len(clients)
