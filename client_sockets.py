@@ -660,7 +660,7 @@ class beCtrlSock(object):
 
 class CtrlSock(object):
 
-    def __init__(self, beCtrlHost):
+    def __init__(self, beCtrlHost, client):
         self.img = None
         self.imbyt = None
         self.bufsize = 10240  # socket缓冲区大小
@@ -668,6 +668,7 @@ class CtrlSock(object):
         # hs = beCtrlHost.split(":")
         # if len(hs) == 2:
         self.beCtrlHost = beCtrlHost
+        self.owner = client
 
     def __del__(self):
         self.sock.close()
@@ -762,4 +763,4 @@ class CtrlSock(object):
                     break
             cv2.destroyWindow('Control')
         elif header == "refuse":
-            print("he refuse to beControl")
+            self.owner.stats.client_meeting.denied_signal.emit(self.beCtrlHost[0])

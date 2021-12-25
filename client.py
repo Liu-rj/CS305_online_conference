@@ -62,7 +62,7 @@ class Client(object):
         self.beCtrlSock.run()
 
     def remote_control(self, beCtrlIp):
-        self.ctrlSock = CtrlSock((str(beCtrlIp), BECTRLPORT))
+        self.ctrlSock = CtrlSock((str(beCtrlIp), BECTRLPORT),self)
         self.ctrlSock.run()
 
     def setup(self):
