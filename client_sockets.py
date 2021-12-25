@@ -782,7 +782,8 @@ class CtrlSock(object):
             elif event == cv2.EVENT_RBUTTONUP:
                 EventDo(struct.pack('>BBHH', 3, 117, x, y))
             elif event == cv2.EVENT_MOUSEWHEEL:
-                if event.delta < 0:
+                value = getMouseWheelDelta(flags)
+                if value > 0:
                     EventDo(struct.pack('>BBHH', 2, 0, x, y))
                 else:
                     EventDo(struct.pack('>BBHH', 2, 1, x, y))
