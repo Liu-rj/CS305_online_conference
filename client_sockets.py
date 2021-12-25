@@ -581,7 +581,6 @@ class beCtrlSock(object):
             elif key == 4 and op == 4:
                 mouse.move(ox, oy)
             else:
-                print(str(key) + " " + str(op) + " " + str(ox) + " " + str(oy))
                 k = official_virtual_keys.get(key)
                 if k is not None:
                     print(k)
@@ -747,14 +746,10 @@ class CtrlSock(object):
                     cv2.imshow('Control', imsh)
                     keyNum = cv2.waitKey(10)
                     if keyNum == 27:
-                        print(str(keyNum)+" "+str(hex(keyNum)))
                         self.sock.sendall(struct.pack('>BBHH', 0, 0, 0, 0))
-                        print(str(keyNum)+" "+str(hex(keyNum)))
+                        break
                     elif 0 <= keyNum <= 255:
-                        print(str(keyNum)+" "+str(hex(keyNum)))
                         self.sock.sendall(struct.pack('>BBHH', keyNum, 100, 0, 0))
-                        print(str(keyNum)+" "+str(hex(keyNum)))
                 except Exception as e:
-                    print(e)
                     break
         cv2.destroyWindow('Control')
