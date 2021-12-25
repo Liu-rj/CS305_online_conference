@@ -443,172 +443,6 @@ class beCtrlSock(object):
         self.sock.bind(addr)
         self.conn = None
         self.beCtrl = False
-        self.official_virtual_keys = {
-            0x08: 'backspace',
-            0x09: 'tab',
-            0x0c: 'clear',
-            0x0d: 'enter',
-            0x10: 'shift',
-            0x11: 'ctrl',
-            0x12: 'alt',
-            0x13: 'pause',
-            0x14: 'caps lock',
-            0x15: 'ime kana mode',
-            0x15: 'ime hanguel mode',
-            0x15: 'ime hangul mode',
-            0x17: 'ime junja mode',
-            0x18: 'ime final mode',
-            0x19: 'ime hanja mode',
-            0x19: 'ime kanji mode',
-            0x1b: 'esc',
-            0x1c: 'ime convert',
-            0x1d: 'ime nonconvert',
-            0x1e: 'ime accept',
-            0x1f: 'ime mode change request',
-            0x20: 'spacebar',
-            0x21: 'page up',
-            0x22: 'page down',
-            0x23: 'end',
-            0x24: 'home',
-            0x25: 'left',
-            0x26: 'up',
-            0x27: 'right',
-            0x28: 'down',
-            0x29: 'select',
-            0x2a: 'print',
-            0x2b: 'execute',
-            0x2c: 'print screen',
-            0x2d: 'insert',
-            0x2e: 'delete',
-            0x2f: 'help',
-            0x30: '0',
-            0x31: '1',
-            0x32: '2',
-            0x33: '3',
-            0x34: '4',
-            0x35: '5',
-            0x36: '6',
-            0x37: '7',
-            0x38: '8',
-            0x39: '9',
-            0x41: 'a',
-            0x42: 'b',
-            0x43: 'c',
-            0x44: 'd',
-            0x45: 'e',
-            0x46: 'f',
-            0x47: 'g',
-            0x48: 'h',
-            0x49: 'i',
-            0x4a: 'j',
-            0x4b: 'k',
-            0x4c: 'l',
-            0x4d: 'm',
-            0x4e: 'n',
-            0x4f: 'o',
-            0x50: 'p',
-            0x51: 'q',
-            0x52: 'r',
-            0x53: 's',
-            0x54: 't',
-            0x55: 'u',
-            0x56: 'v',
-            0x57: 'w',
-            0x58: 'x',
-            0x59: 'y',
-            0x5a: 'z',
-            0x5b: 'left windows',
-            0x5c: 'right windows',
-            0x5d: 'applications',
-            0x5f: 'sleep',
-            0x60: '0',
-            0x61: '1',
-            0x62: '2',
-            0x63: '3',
-            0x64: '4',
-            0x65: '5',
-            0x66: '6',
-            0x67: '7',
-            0x68: '8',
-            0x69: '9',
-            0x6a: '*',
-            0x6b: '=',
-            0x6c: 'separator',
-            0x6d: '-',
-            0x6e: 'decimal',
-            0x6f: '/',
-            0x70: 'f1',
-            0x71: 'f2',
-            0x72: 'f3',
-            0x73: 'f4',
-            0x74: 'f5',
-            0x75: 'f6',
-            0x76: 'f7',
-            0x77: 'f8',
-            0x78: 'f9',
-            0x79: 'f10',
-            0x7a: 'f11',
-            0x7b: 'f12',
-            0x7c: 'f13',
-            0x7d: 'f14',
-            0x7e: 'f15',
-            0x7f: 'f16',
-            0x80: 'f17',
-            0x81: 'f18',
-            0x82: 'f19',
-            0x83: 'f20',
-            0x84: 'f21',
-            0x85: 'f22',
-            0x86: 'f23',
-            0x87: 'f24',
-            0x90: 'num lock',
-            0x91: 'scroll lock',
-            0xa0: 'left shift',
-            0xa1: 'right shift',
-            0xa2: 'left ctrl',
-            0xa3: 'right ctrl',
-            0xa4: 'left menu',
-            0xa5: 'right menu',
-            0xa6: 'browser back',
-            0xa7: 'browser forward',
-            0xa8: 'browser refresh',
-            0xa9: 'browser stop',
-            0xaa: 'browser search key',
-            0xab: 'browser favorites',
-            0xac: 'browser start and home',
-            0xad: 'volume mute',
-            0xae: 'volume down',
-            0xaf: 'volume up',
-            0xb0: 'next track',
-            0xb1: 'previous track',
-            0xb2: 'stop media',
-            0xb3: 'play/pause media',
-            0xb4: 'start mail',
-            0xb5: 'select media',
-            0xb6: 'start application 1',
-            0xb7: 'start application 2',
-            0xbb: '+',
-            0xbc: ',',
-            0xbd: '-',
-            0xbe: '.',
-            0xe5: 'ime process',
-            0xf6: 'attn',
-            0xf7: 'crsel',
-            0xf8: 'exsel',
-            0xf9: 'erase eof',
-            0xfa: 'play',
-            0xfb: 'zoom',
-            0xfc: 'reserved ',
-            0xfd: 'pa1',
-            0xfe: 'clear',
-            0xba: ';',
-            0xde: '\'',
-            0xdb: '[',
-            0xdd: ']',
-            0xbf: '/',
-            0xc0: '`',
-            0xdc: '\\',
-        }
 
     def __del__(self):
         self.sock.close()
@@ -633,26 +467,96 @@ class beCtrlSock(object):
         threading.Thread(target=self.handle, args=(self.conn,)).start()
         threading.Thread(target=self.control, args=(self.conn,)).start()
 
-    def handle_cancel(self):
-        send_data(self.conn, b'refuse', ("").encode())
-        self.conn.close()
+    # def handle_cancel(self):
+    #     send_data(self.conn, b'refuse', ("").encode())
+    #     self.conn.close()
 
     # 读取控制命令，并在本机还原操作
     def control(self, conn):
+        official_virtual_keys = {
+            0x08: 'backspace',
+            0x09: 'tab',
+            0x0d: 'enter',
+            0x20: 'space',
+            0x30: '0',
+            0x31: '1',
+            0x32: '2',
+            0x33: '3',
+            0x34: '4',
+            0x35: '5',
+            0x36: '6',
+            0x37: '7',
+            0x38: '8',
+            0x39: '9',
+            0x61: 'a',
+            0x62: 'b',
+            0x63: 'c',
+            0x64: 'd',
+            0x65: 'e',
+            0x66: 'f',
+            0x67: 'g',
+            0x68: 'h',
+            0x69: 'i',
+            0x6a: 'j',
+            0x6b: 'k',
+            0x6c: 'l',
+            0x6d: 'm',
+            0x6e: 'n',
+            0x6f: 'o',
+            0x70: 'p',
+            0x71: 'q',
+            0x72: 'r',
+            0x73: 's',
+            0x74: 't',
+            0x75: 'u',
+            0x76: 'v',
+            0x77: 'w',
+            0x78: 'x',
+            0x79: 'y',
+            0x7a: 'z',
+            # 0x60: '0',
+            # 0x61: '1',
+            # 0x62: '2',
+            # 0x63: '3',
+            # 0x64: '4',
+            # 0x65: '5',
+            # 0x66: '6',
+            # 0x67: '7',
+            # 0x68: '8',
+            # 0x69: '9',
+            0x2a: '*',
+            0x3d: '=',
+            0x2f: '/',
+            0x2b: '+',
+            0x2c: ',',
+            0x2d: '-',
+            0x2e: '.',
+            0x3b: ';',
+            0x5b: '[',
+            0x5d: ']',
+            0x60: '`',
+            0x3c: '<',
+            0x3e: '>',
+            0x3a: ':',
+            0xae: '\'',
+            0xaf: '\'',
+            0xa2: '\\',
+        }
+
         def Op(key, op, ox, oy):
             # print(key, op, ox, oy)
             if key == 1:
                 if op == 100:
                     # 左键按下
-                    mouse.move(ox, oy)
+                    # mouse.move(ox, oy)
                     mouse.press(button=mouse.LEFT)
                 elif op == 117:
                     # 左键弹起
-                    x, y = mouse.get_position()
-                    if ox != x or oy != y:
-                        if not mouse.is_pressed():
-                            mouse.press(button=mouse.LEFT)
-                        mouse.move(ox, oy)
+                    # x, y = mouse.get_position()
+                    # if ox != x or oy != y:
+                    #     if not mouse.is_pressed():
+                    #         mouse.press(button=mouse.LEFT)
+                    #     mouse.move(ox, oy)
                     mouse.release(button=mouse.LEFT)
             elif key == 2:
                 # 滚轮事件
@@ -668,20 +572,23 @@ class beCtrlSock(object):
                 # 鼠标右键
                 if op == 100:
                     # 右键按下
-                    mouse.move(ox, oy)
+                    # mouse.move(ox, oy)
                     mouse.press(button=mouse.RIGHT)
                 elif op == 117:
                     # 右键弹起
-                    mouse.move(ox, oy)
+                    # mouse.move(ox, oy)
                     mouse.release(button=mouse.RIGHT)
+            elif key == 4 and op == 4:
+                mouse.move(ox, oy)
             else:
-                k = self.official_virtual_keys.get(key)
+                k = official_virtual_keys.get(key)
                 if k is not None:
+                    print(k)
                     keyboard.press(k)
-                    keyboard.release(k)
+                    # keyboard.release(k)
 
         try:
-            base_len = 4
+            base_len = 6
             while self.beCtrl:
                 cmd = b''
                 rest = base_len - 0
@@ -690,11 +597,8 @@ class beCtrlSock(object):
                     rest -= len(cmd)
                 key = cmd[0]
                 op = cmd[1]
-                # x = struct.unpack('>H', cmd[2:4])[0]
-                # y = struct.unpack('>H', cmd[4:6])[0]
-                x = cmd[2]
-                y = cmd[3]
-                print(str(key) + " " + str(op) + " " + str(x) + " " + str(y))
+                x = struct.unpack('>H', cmd[2:4])[0]
+                y = struct.unpack('>H', cmd[4:6])[0]
                 if key == 0 and op == 0 and x == 0 and y == 0:
                     self.beCtrl = False
                     break
@@ -784,11 +688,12 @@ class CtrlSock(object):
             elif event == cv2.EVENT_RBUTTONUP:
                 EventDo(struct.pack('>BBHH', 3, 117, x, y))
             elif event == cv2.EVENT_MOUSEWHEEL:
-                EventDo(struct.pack('>BBHH', 2, 0, x, y))
-            elif event == cv2.EVENT_MOUSEHWHEEL:
-                EventDo(struct.pack('>BBHH', 2, 1, x, y))
-            # elif event == cv2.EVENT_MOUSEMOVE:
-            #     EventDo(struct.pack('>BBHH', 4, 4, x, y))
+                if flags < 0:
+                    EventDo(struct.pack('>BBHH', 2, 0, x, y))
+                else:
+                    EventDo(struct.pack('>BBHH', 2, 1, x, y))
+            elif event == cv2.EVENT_MOUSEMOVE:
+                EventDo(struct.pack('>BBHH', 4, 4, x, y))
 
         cv2.setMouseCallback("Control", mouseEvent)
 
@@ -844,13 +749,12 @@ class CtrlSock(object):
                         self.img = self.img + ims
                     imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
                     cv2.imshow('Control', imsh)
-                    keyNum = cv2.waitKey(1)
-                    if 0 <= keyNum <= 255:
-                        self.sock.sendall(struct.pack('>BBHH', hex(keyNum), 100, 0, 0))
-                    # 点击窗口按钮关闭窗口
-                    cv2.waitKey(1)
-                    if cv2.getWindowProperty('Control', cv2.WND_PROP_VISIBLE) < 1:
+                    keyNum = cv2.waitKey(10)
+                    if keyNum == 27:
                         self.sock.sendall(struct.pack('>BBHH', 0, 0, 0, 0))
                         break
-                except:
+                    elif 0 <= keyNum <= 255:
+                        self.sock.sendall(struct.pack('>BBHH', keyNum, 100, 0, 0))
+                except Exception as e:
                     break
+        cv2.destroyWindow('Control')
