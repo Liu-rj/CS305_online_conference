@@ -221,7 +221,7 @@ class Stats():
         self.client_meeting = ClientMeeting(self.client, meeting_window)
         self.client_meeting.client_signal.connect(self.update_all_clients)
         self.client_meeting.ctrl_signal.connect(self.handle_control_msg)
-        self.client_meeting.denied_signal.connet(self.to_control_denied)
+        self.client_meeting.denied_signal.connect(self.to_control_denied)
         self.client_meeting.start()
 
     def on_join(self):
@@ -446,7 +446,7 @@ class Stats():
                                          "background-color: yellow;"
                                          "selection-color: yellow;"
                                          "selection-background-color: blue;")
-        self.deny_window.setFixedSize(QSize(300, 50))
+        self.deny_window.setFixedSize(QSize(500, 50))
         self.deny_window.setWindowTitle('Meeting Info')
         self.deny_window.setFont(QFont("Times New Roman", 18))
         self.deny_window.setEnabled(False)
