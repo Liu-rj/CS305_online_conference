@@ -302,12 +302,12 @@ class Stats():
 
     def handle_screen_control_button(self):
         self.control_window = QMainWindow()
-        self.control_window.setFixedSize(225, 220)
+        self.control_window.setFixedSize(265, 220)
         self.control_window.move((self.resolution.width() / 2) - (self.control_window.frameSize().width() / 2),
                                  (self.resolution.height() / 2) - (self.control_window.frameSize().height() / 2))
         self.control_window.setWindowTitle('Participant list')
         self.control_confirm_button = QPushButton(self.control_window)
-        self.control_confirm_button.resize(100, 50)
+        self.control_confirm_button.resize(120, 50)
         self.control_confirm_button.move(10, 170)
         self.control_confirm_button.setText("Confirm")
         self.control_confirm_button.setFont(QFont("Times New Roman", 18))
@@ -316,8 +316,8 @@ class Stats():
                                                   "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
         self.control_confirm_button.clicked.connect(self.handle_control_confirm)
         self.control_cancel_button = QPushButton(self.control_window)
-        self.control_cancel_button.resize(100, 50)
-        self.control_cancel_button.move(115, 170)
+        self.control_cancel_button.resize(120, 50)
+        self.control_cancel_button.move(135, 170)
         self.control_cancel_button.setText("Cancel")
         self.control_cancel_button.setFont(QFont("Times New Roman", 18))
         self.control_cancel_button.setStyleSheet("QToolButton{border:none;color:rgb(0, 0, 0);}"
@@ -516,12 +516,12 @@ class MeetingWindow(QMainWindow):
 
     def init_super_exit(self):
         self.exit_window = QMainWindow()
-        self.exit_window.setFixedSize(440, 70)
+        self.exit_window.setFixedSize(740, 70)
         self.exit_window.move((self.resolution.width() / 2) - (self.exit_window.frameSize().width() / 2),
                                  (self.resolution.height() / 2) - (self.exit_window.frameSize().height() / 2))
         self.exit_window.setWindowTitle('Exit Window')
         self.end_button = QPushButton(self.exit_window)
-        self.end_button.resize(150, 50)
+        self.end_button.resize(250, 50)
         self.end_button.move(10, 10)
         self.end_button.setText("End Meeting")
         self.end_button.setFont(QFont("Times New Roman", 18))
@@ -530,8 +530,8 @@ class MeetingWindow(QMainWindow):
                                                   "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
         self.end_button.clicked.connect(self.handle_end)
         self.leave_button = QPushButton(self.exit_window)
-        self.leave_button.resize(150, 50)
-        self.leave_button.move(170, 10)
+        self.leave_button.resize(250, 50)
+        self.leave_button.move(270, 10)
         self.leave_button.setText("Leave Meeting")
         self.leave_button.setFont(QFont("Times New Roman", 18))
         self.leave_button.setStyleSheet("QToolButton{border:none;color:rgb(0, 0, 0);}"
@@ -539,8 +539,8 @@ class MeetingWindow(QMainWindow):
                                                   "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
         self.leave_button.clicked.connect(self.handle_leave)
         self.exit_cancel_button = QPushButton(self.exit_window)
-        self.exit_cancel_button.resize(100, 50)
-        self.exit_cancel_button.move(330, 10)
+        self.exit_cancel_button.resize(200, 50)
+        self.exit_cancel_button.move(530, 10)
         self.exit_cancel_button.setText("Cancel")
         self.exit_cancel_button.setFont(QFont("Times New Roman", 18))
         self.exit_cancel_button.setStyleSheet("QToolButton{border:none;color:rgb(0, 0, 0);}"
@@ -550,12 +550,12 @@ class MeetingWindow(QMainWindow):
 
     def init_normal_exit(self):
         self.exit_window = QMainWindow()
-        self.exit_window.setFixedSize(280, 70)
+        self.exit_window.setFixedSize(480, 70)
         self.exit_window.move((self.resolution.width() / 2) - (self.exit_window.frameSize().width() / 2),
                               (self.resolution.height() / 2) - (self.exit_window.frameSize().height() / 2))
         self.exit_window.setWindowTitle('Exit Window')
         self.leave_button = QPushButton(self.exit_window)
-        self.leave_button.resize(150, 50)
+        self.leave_button.resize(250, 50)
         self.leave_button.move(10, 10)
         self.leave_button.setText("Leave Meeting")
         self.leave_button.setFont(QFont("Times New Roman", 18))
@@ -564,8 +564,8 @@ class MeetingWindow(QMainWindow):
                                         "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
         self.leave_button.clicked.connect(self.handle_leave)
         self.exit_cancel_button = QPushButton(self.exit_window)
-        self.exit_cancel_button.resize(100, 50)
-        self.exit_cancel_button.move(170, 10)
+        self.exit_cancel_button.resize(200, 50)
+        self.exit_cancel_button.move(270, 10)
         self.exit_cancel_button.setText("Cancel")
         self.exit_cancel_button.setFont(QFont("Times New Roman", 18))
         self.exit_cancel_button.setStyleSheet("QToolButton{border:none;color:rgb(0, 0, 0);}"
