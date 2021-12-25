@@ -20,7 +20,7 @@ class Client(object):
         self.video_sock = VideoSock((XXIP, XXVIDEOPORT), self)
         self.audio_sock = AudioSock((XXIP, XXAUDIOPORT))
         self.screen_sock = ScreenSock((XXIP, XXSCREEENPORT))
-        self.beCtrlSock = beCtrlSock((self.ip, BECTRLPORT))
+        self.beCtrlSock = beCtrlSock((self.ip, BECTRLPORT), self)
         # self.beCtrlHost = "10.25.10.50:80"
         self.ctrlSock = None
         self.room_id: Union[int, None] = None

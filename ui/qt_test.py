@@ -220,6 +220,7 @@ class Stats():
     def start_client_meeting(self, meeting_window):
         self.client_meeting = ClientMeeting(self.client, meeting_window)
         self.client_meeting.client_signal.connect(self.update_all_clients)
+        self.client_meeting.ctrl_signal.connect(self.handle_control_msg)
         self.client_meeting.start()
 
     def on_join(self):
@@ -603,6 +604,7 @@ class MeetingWindow(QMainWindow):
 
 class ClientMeeting(QThread):
     client_signal = pyqtSignal()
+    ctrl_signal = pyqtSignal()
 
     def __init__(self, client, meeting_window):
         super().__init__()

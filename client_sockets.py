@@ -435,7 +435,7 @@ class ScreenSock(object):
 
 class beCtrlSock(object):
 
-    def __init__(self, addr):
+    def __init__(self, addr, client):
         self.img = None
         self.imbyt = None
         self.IMQUALITY = 50  # 压缩比 1-100 数值越小，压缩比越高，图片质量损失越严重
@@ -443,6 +443,7 @@ class beCtrlSock(object):
         self.sock.bind(addr)
         self.conn = None
         self.beCtrl = False
+        self.owner = client
 
     def __del__(self):
         self.sock.close()
@@ -457,8 +458,9 @@ class beCtrlSock(object):
         self.sock.listen(2)
         while True:
             self.conn, addr = self.sock.accept()
+            self.owner.stats.client_meeting.ctrl_signal.emit(addr)
             # self.stats.handle_control_msg(addr)
-            self.handle_confirm()
+            # self.handle_confirm()
             print("accept")
 
     def handle_confirm(self):
