@@ -694,8 +694,6 @@ class beCtrlSock(object):
                 op = cmd[1]
                 x = struct.unpack('>H', cmd[2:4])[0]
                 y = struct.unpack('>H', cmd[4:6])[0]
-                # x = cmd[2]
-                # y = cmd[3]
                 print(str(key) + " " + str(op) + " " + str(x) + " " + str(y))
                 if key == 0 and op == 0 and x == 0 and y == 0:
                     self.beCtrl = False
@@ -772,7 +770,6 @@ class CtrlSock(object):
             self.sock.sendall(data)
 
         def mouseEvent(event, x, y, flags, param):
-            print(x,y)
             if event == cv2.EVENT_LBUTTONDOWN:
                 EventDo(struct.pack('>BBHH', 1, 100, x, y))
             elif event == cv2.EVENT_LBUTTONUP:
@@ -782,9 +779,7 @@ class CtrlSock(object):
             elif event == cv2.EVENT_RBUTTONUP:
                 EventDo(struct.pack('>BBHH', 3, 117, x, y))
             elif event == cv2.EVENT_MOUSEWHEEL:
-                # value = getMouseWheelDelta(flags)
-                print(flags)
-                if flags > 0:
+                if flags < 0:
                     EventDo(struct.pack('>BBHH', 2, 0, x, y))
                 else:
                     EventDo(struct.pack('>BBHH', 2, 1, x, y))
@@ -845,12 +840,12 @@ class CtrlSock(object):
                         self.img = self.img + ims
                     imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
                     cv2.imshow('Control', imsh)
-                    keyNum = cv2.waitKey(1)
+                    keyNum = cv2.waitKey(10) & 0xFF
+                    print(hex(keyNum))
                     if keyNum == 27:
                         self.sock.sendall(struct.pack('>BBHH', 0, 0, 0, 0))
                         break
-                    elif 0 <= keyNum <= 255:
-                        print(hex(keyNum))
+                    else:
                         self.sock.sendall(struct.pack('>BBHH', hex(keyNum), 100, 0, 0))
                     # 点击窗口按钮关闭窗口
                     # cv2.waitKey(1)
@@ -859,4 +854,4 @@ class CtrlSock(object):
                     #     break
                 except:
                     break
-            cv2.destroyWindow('Control')
+        cv2.destroyWindow('Control')
