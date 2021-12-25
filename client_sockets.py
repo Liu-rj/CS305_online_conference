@@ -633,9 +633,9 @@ class beCtrlSock(object):
         threading.Thread(target=self.handle, args=(self.conn,)).start()
         threading.Thread(target=self.control, args=(self.conn,)).start()
 
-    def handle_cancel(self):
-        send_data(self.conn, b'refuse', ("").encode())
-        self.conn.close()
+    # def handle_cancel(self):
+    #     send_data(self.conn, b'refuse', ("").encode())
+    #     self.conn.close()
 
     # 读取控制命令，并在本机还原操作
     def control(self, conn):
@@ -674,6 +674,8 @@ class beCtrlSock(object):
                     # 右键弹起
                     mouse.move(ox, oy)
                     mouse.release(button=mouse.RIGHT)
+            elif key == 4 and op == 4:
+                mouse.move(ox, oy)
             else:
                 k = self.official_virtual_keys.get(key)
                 if k is not None:
@@ -681,7 +683,7 @@ class beCtrlSock(object):
                     keyboard.release(k)
 
         try:
-            base_len = 4
+            base_len = 6
             while self.beCtrl:
                 cmd = b''
                 rest = base_len - 0
@@ -690,10 +692,10 @@ class beCtrlSock(object):
                     rest -= len(cmd)
                 key = cmd[0]
                 op = cmd[1]
-                # x = struct.unpack('>H', cmd[2:4])[0]
-                # y = struct.unpack('>H', cmd[4:6])[0]
-                x = cmd[2]
-                y = cmd[3]
+                x = struct.unpack('>H', cmd[2:4])[0]
+                y = struct.unpack('>H', cmd[4:6])[0]
+                # x = cmd[2]
+                # y = cmd[3]
                 print(str(key) + " " + str(op) + " " + str(x) + " " + str(y))
                 if key == 0 and op == 0 and x == 0 and y == 0:
                     self.beCtrl = False
@@ -770,6 +772,7 @@ class CtrlSock(object):
             self.sock.sendall(data)
 
         def mouseEvent(event, x, y, flags, param):
+            print(x,y)
             if event == cv2.EVENT_LBUTTONDOWN:
                 EventDo(struct.pack('>BBHH', 1, 100, x, y))
             elif event == cv2.EVENT_LBUTTONUP:
@@ -779,11 +782,12 @@ class CtrlSock(object):
             elif event == cv2.EVENT_RBUTTONUP:
                 EventDo(struct.pack('>BBHH', 3, 117, x, y))
             elif event == cv2.EVENT_MOUSEWHEEL:
-                EventDo(struct.pack('>BBHH', 2, 0, x, y))
-            elif event == cv2.EVENT_MOUSEHWHEEL:
-                EventDo(struct.pack('>BBHH', 2, 1, x, y))
-            # elif event == cv2.EVENT_MOUSEMOVE:
-            #     EventDo(struct.pack('>BBHH', 4, 4, x, y))
+                if event.delta < 0:
+                    EventDo(struct.pack('>BBHH', 2, 0, x, y))
+                else:
+                    EventDo(struct.pack('>BBHH', 2, 1, x, y))
+            elif event == cv2.EVENT_MOUSEMOVE:
+                EventDo(struct.pack('>BBHH', 4, 4, x, y))
 
         cv2.setMouseCallback("Control", mouseEvent)
 
