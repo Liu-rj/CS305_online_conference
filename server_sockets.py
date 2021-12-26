@@ -198,10 +198,11 @@ class ServerSocket(threading.Thread):
         super().__init__()
         self.client: Tuple[socket.socket, Tuple[str, int]] = client
         self.sock: socket.socket = client[0]
-        self.sock.setblocking(False)
+        # self.sock.setblocking(False)
         self.meeting: Union[Meeting, None] = None
 
     def __del__(self):
+        print('enter delete self')
         self.quit_meeting()
         self.sock.close()
 
@@ -212,7 +213,7 @@ class ServerSocket(threading.Thread):
             if not self.meeting.services:
                 del ServerSocket.rooms[self.meeting.room_id]
             self.meeting = None
-        print(self.client[1], 'quit room, room info:', ServerSocket.rooms)
+        # print(self.client[1], 'quit room, room info:', ServerSocket.rooms)
 
     def close_meeting(self):
         if self.meeting:
@@ -226,9 +227,14 @@ class ServerSocket(threading.Thread):
                 header, data, alive = receive_data(self.sock)
                 if not alive:
                     print('end of client', self.client[1])
+                    self.quit_meeting()
+                    self.sock.close()
                     return
             except:
-                continue
+                print('end of client', self.client[1])
+                self.quit_meeting()
+                self.sock.close()
+                return
             if header == 'join room':
                 room_id = int(data.split(' ')[1])
                 if room_id in self.rooms.keys():

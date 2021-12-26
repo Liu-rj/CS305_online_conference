@@ -629,12 +629,12 @@ class ClientMeeting(QThread):
         self.window = meeting_window
 
     def run(self):
-        self.sock.sock.setblocking(False)
+        # self.sock.sock.setblocking(False)
         while self.owner.room_id is not None:
             try:
                 header, data = self.sock.receive_server_data()
             except:
-                continue
+                return
             if header == 'clients':
                 clients_list = []
                 clients = data.split('\r\n')
@@ -650,4 +650,4 @@ class ClientMeeting(QThread):
                     self.owner.admin = True
             elif header == 'close':
                 self.window.force_quit()
-        self.sock.sock.setblocking(True)
+        # self.sock.sock.setblocking(True)
