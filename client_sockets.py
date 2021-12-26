@@ -386,16 +386,7 @@ class ScreenSock(object):
         while self.receiving:
             lenb = sock.recv(5)
             imtype, le = struct.unpack(">BI", lenb)
-            # imb = b''
-            # while le > self.bufsize:
-            #     t = self.sock.recv(self.bufsize)
-            #     imb += t
-            #     le -= len(t)
-            # while le > 0:
-            #     t = self.sock.recv(le)
-            #     imb += t
-            #     le -= len(t)
-            imb = self.sock.recv(le)
+            imb = sock.recv(le)
             data = np.frombuffer(imb, dtype=np.uint8)
             self.img = cv2.imdecode(data, cv2.IMREAD_COLOR)
             imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
@@ -406,16 +397,7 @@ class ScreenSock(object):
             imtype, le = struct.unpack(">BI", lenb)
             while imtype != 2:
                 try:
-                    # imb = b''
-                    # while le > self.bufsize:
-                    #     t = self.sock.recv(self.bufsize)
-                    #     imb += t
-                    #     le -= len(t)
-                    # while le > 0:
-                    #     t = self.sock.recv(le)
-                    #     imb += t
-                    #     le -= len(t)
-                    imb = self.sock.recv(le)
+                    imb = sock.recv(le)
                     data = np.frombuffer(imb, dtype=np.uint8)
                     ims = cv2.imdecode(data, cv2.IMREAD_COLOR)
                     if imtype == 1:
