@@ -123,6 +123,7 @@ class Meeting(object):
                     self.audio_receiving.remove(other)
 
     def screen_forward(self):
+        bufsize = 81920
         while True:
             for client in self.screen_sharing:
                 try:
@@ -155,17 +156,16 @@ class Meeting(object):
                             other[0].close()
                             self.screen_receiving.remove(other)
                 else:
-                    # data2 = b''
-                    # while le > bufsize:
-                    #     t = client[0].recv(bufsize)
-                    #     data2 += t
-                    #     le -= len(t)
-                    # while le > 0:
-                    #     t = client[0].recv(le)
-                    #     data2 += t
-                    #     le -= len(t)
                     try:
-                        data2 = client[0].recv(le)
+                        data2 = b''
+                        while le > bufsize:
+                            t = client[0].recv(bufsize)
+                            data2 += t
+                            le -= len(t)
+                        while le > 0:
+                            t = client[0].recv(le)
+                            data2 += t
+                            le -= len(t)
                     except socket.error as e:
                         print(e)
                         for other in self.screen_receiving:

@@ -291,7 +291,7 @@ class ScreenSock(object):
         self.room_id = None
         self.img = None
         self.imbyt = None
-        self.bufsize = 10240  # socket缓冲区大小
+        self.bufsize = 81920  # socket缓冲区大小
         self.IMQUALITY = 50  # 压缩比 1-100 数值越小，压缩比越高，图片质量损失越严重
         self.sharing = False
         self.receiving = False
@@ -386,7 +386,15 @@ class ScreenSock(object):
         while self.receiving:
             lenb = sock.recv(5)
             imtype, le = struct.unpack(">BI", lenb)
-            imb = sock.recv(le)
+            imb = b''
+            while le > self.bufsize:
+                t = sock.recv(self.bufsize)
+                imb += t
+                le -= len(t)
+            while le > 0:
+                t = sock.recv(le)
+                imb += t
+                le -= len(t)
             data = np.frombuffer(imb, dtype=np.uint8)
             self.img = cv2.imdecode(data, cv2.IMREAD_COLOR)
             imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
@@ -397,7 +405,15 @@ class ScreenSock(object):
             imtype, le = struct.unpack(">BI", lenb)
             while imtype != 2:
                 try:
-                    imb = sock.recv(le)
+                    imb = b''
+                    while le > self.bufsize:
+                        t = sock.recv(self.bufsize)
+                        imb += t
+                        le -= len(t)
+                    while le > 0:
+                        t = sock.recv(le)
+                        imb += t
+                        le -= len(t)
                     data = np.frombuffer(imb, dtype=np.uint8)
                     ims = cv2.imdecode(data, cv2.IMREAD_COLOR)
                     if imtype == 1:
@@ -647,7 +663,7 @@ class CtrlSock(object):
     def __init__(self, beCtrlHost, client):
         self.img = None
         self.imbyt = None
-        self.bufsize = 10240  # socket缓冲区大小
+        self.bufsize = 81920  # socket缓冲区大小
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # hs = beCtrlHost.split(":")
         # if len(hs) == 2:
@@ -700,16 +716,15 @@ class CtrlSock(object):
         if header == "accept":
             lenb = self.sock.recv(5)
             imtype, le = struct.unpack(">BI", lenb)
-            # imb = b''
-            # while le > self.bufsize:
-            #     t = self.sock.recv(self.bufsize)
-            #     imb += t
-            #     le -= len(t)
-            # while le > 0:
-            #     t = self.sock.recv(le)
-            #     imb += t
-            #     le -= len(t)
-            imb = self.sock.recv(le)
+            imb = b''
+            while le > self.bufsize:
+                t = self.sock.recv(self.bufsize)
+                imb += t
+                le -= len(t)
+            while le > 0:
+                t = self.sock.recv(le)
+                imb += t
+                le -= len(t)
             data = np.frombuffer(imb, dtype=np.uint8)
             self.img = cv2.imdecode(data, cv2.IMREAD_COLOR)
             imsh = cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)
@@ -720,16 +735,15 @@ class CtrlSock(object):
                 try:
                     lenb = self.sock.recv(5)
                     imtype, le = struct.unpack(">BI", lenb)
-                    # imb = b''
-                    # while le > self.bufsize:
-                    #     t = self.sock.recv(self.bufsize)
-                    #     imb += t
-                    #     le -= len(t)
-                    # while le > 0:
-                    #     t = self.sock.recv(le)
-                    #     imb += t
-                    #     le -= len(t)
-                    imb = self.sock.recv(le)
+                    imb = b''
+                    while le > self.bufsize:
+                        t = self.sock.recv(self.bufsize)
+                        imb += t
+                        le -= len(t)
+                    while le > 0:
+                        t = self.sock.recv(le)
+                        imb += t
+                        le -= len(t)
                     data = np.frombuffer(imb, dtype=np.uint8)
                     ims = cv2.imdecode(data, cv2.IMREAD_COLOR)
                     if imtype == 1:
