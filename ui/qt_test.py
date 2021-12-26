@@ -227,7 +227,7 @@ class Stats():
     def on_join(self):
         meeting_id = self.join_window.text()
         if not self.client.join_meeting(meeting_id):
-            print("cannot join")
+            # print("cannot join")
             self.cannot_join_window = QLineEdit()
             self.cannot_join_window.setPlaceholderText('Incorrect meeting id')
             self.cannot_join_window.setStyleSheet("color: blue;"
@@ -351,7 +351,7 @@ class Stats():
 
     def handle_button_group(self):
         self.to_control_ip = self.cs_group.checkedButton().text()
-        print(self.cs_group.checkedButton().text())
+        # print(self.cs_group.checkedButton().text())
 
     def handle_invite_button(self):
         self.invite_window = QLineEdit()
@@ -425,7 +425,7 @@ class Stats():
         if self.client.host:
             self.transfer_button.show()
             self.assign_button.show()
-        print(self.more_cs_group.checkedButton().text())
+        # print(self.more_cs_group.checkedButton().text())
 
     def handle_control_msg(self, ip):
         self.msg_area.setText('ip' + ip +' wants to control your PC!')
@@ -635,11 +635,12 @@ class ClientMeeting(QThread):
                 header, data = self.sock.receive_server_data()
             except:
                 return
+            # print(f'{header}, {data}, {str(self.owner.room_id)}')
             if header == 'clients':
                 clients_list = []
                 clients = data.split('\r\n')
                 for seg in clients:
-                    print(seg)
+                    # print(seg)
                     clients_list.append(seg.split(' ')[1])
                 self.clients = clients_list
                 self.client_signal.emit()
@@ -650,4 +651,7 @@ class ClientMeeting(QThread):
                     self.owner.admin = True
             elif header == 'close':
                 self.window.force_quit()
+                return
+            elif header == 'quit':
+                return
         # self.sock.sock.setblocking(True)

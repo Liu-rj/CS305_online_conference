@@ -235,6 +235,7 @@ class ServerSocket(threading.Thread):
                 self.quit_meeting()
                 self.sock.close()
                 return
+            # print(f'{header}, {data}')
             if header == 'join room':
                 room_id = int(data.split(' ')[1])
                 if room_id in self.rooms.keys():
@@ -254,8 +255,10 @@ class ServerSocket(threading.Thread):
                     self.sock.send('200 OK\r\n\r\nroomId {}'.format(str(room_id)).encode())
             elif header == 'quit room':
                 self.quit_meeting()
+                self.sock.send('quit\r\n\r\n '.encode())
             elif header == 'close room':
                 self.close_meeting()
+                self.sock.send('quit\r\n\r\n '.encode())
             elif header == 'set':
                 set_type, ip = data.split(':')
                 msg = (header + '\r\n\r\n' + set_type).encode()
