@@ -50,6 +50,7 @@ class Meeting(object):
     def add_service(self, service):
         self.services.append(service)
 
+    #Receive video data from different clients and store it in video buffer
     def video_receive(self, sock):
         data = b''
         payload_size = struct.calcsize("L")
@@ -74,6 +75,7 @@ class Meeting(object):
             # print('remove', sock)
             sock.close()
 
+    #forward vedio data from buffer to clients
     def video_forward(self):
         while True:
             if not self.video_buffer:
@@ -87,6 +89,7 @@ class Meeting(object):
                     other[0].close()
                     self.video_receiving.remove(other)
 
+    #Receive audio data from different clients and store it in audio buffer
     def audio_receive(self, sock, ip):
         data = b''
         payload_size = struct.calcsize("L")
@@ -106,6 +109,7 @@ class Meeting(object):
             # print('remove', sock)
             sock.close()
 
+    #forward audio data from buffer to clients
     def audio_forward(self):
         while True:
             if not self.audio_buffer:
@@ -122,6 +126,7 @@ class Meeting(object):
                     other[0].close()
                     self.audio_receiving.remove(other)
 
+    #Receive a screen share from one client and distribute it to other clients
     def screen_forward(self):
         bufsize = 81920
         while True:
@@ -129,6 +134,7 @@ class Meeting(object):
                 try:
                     data1 = client[0].recv(5)
                 except socket.error as e:
+                    # Handle exceptions when the sharer terminates the program
                     print(e)
                     for other in self.screen_receiving:
                         try:
@@ -136,6 +142,7 @@ class Meeting(object):
                                 continue
                             other[0].sendall(struct.pack(">BI", 2, 0))
                         except socket.error as e:
+                            # Handle exceptions when the receiver terminates the program
                             print(e)
                             other[0].close()
                             self.screen_receiving.remove(other)
@@ -152,6 +159,7 @@ class Meeting(object):
                                 continue
                             other[0].sendall(data1)
                         except socket.error as e:
+                            # Handle exceptions when the receiver terminates the program
                             print(e)
                             other[0].close()
                             self.screen_receiving.remove(other)
@@ -167,6 +175,7 @@ class Meeting(object):
                             data2 += t
                             le -= len(t)
                     except socket.error as e:
+                        # Handle exceptions when the sharer terminates the program
                         print(e)
                         for other in self.screen_receiving:
                             try:
@@ -174,6 +183,7 @@ class Meeting(object):
                                     continue
                                 other[0].sendall(struct.pack(">BI", 2, 0))
                             except socket.error as e:
+                                # Handle exceptions when the receiver terminates the program
                                 print(e)
                                 other[0].close()
                                 self.screen_receiving.remove(other)
@@ -187,11 +197,12 @@ class Meeting(object):
                             other[0].sendall(data1)
                             other[0].sendall(data2)
                         except socket.error as e:
+                            # Handle exceptions when the receiver terminates the program
                             print(e)
                             other[0].close()
                             self.screen_receiving.remove(other)
 
-
+    #Inform all participants of any changes in attendance
     def broadcast(self):
         header = b'clients'
         data = b''
@@ -206,6 +217,7 @@ class Meeting(object):
                 service.client[0].close()
                 self.services.remove(service)
 
+    #Setting Administrator Rights
     def set_privilege(self, msg: bytes, ip: str):
         for service in self.services:
             if service.client[1][0] == ip:
