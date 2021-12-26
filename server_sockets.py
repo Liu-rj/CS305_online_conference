@@ -142,15 +142,16 @@ class Meeting(object):
                                 other[0].close()
                                 self.screen_receiving.remove(other)
                     else:
-                        data2 = b''
-                        while le > bufsize:
-                            t = client[0].recv(bufsize)
-                            data2 += t
-                            le -= len(t)
-                        while le > 0:
-                            t = client[0].recv(le)
-                            data2 += t
-                            le -= len(t)
+                        # data2 = b''
+                        # while le > bufsize:
+                        #     t = client[0].recv(bufsize)
+                        #     data2 += t
+                        #     le -= len(t)
+                        # while le > 0:
+                        #     t = client[0].recv(le)
+                        #     data2 += t
+                        #     le -= len(t)
+                        data2 = client[0].recv(le)
                         for other in self.screen_receiving:
                             try:
                                 if other[1][0] == client[1][0]:
