@@ -123,49 +123,74 @@ class Meeting(object):
                     self.audio_receiving.remove(other)
 
     def screen_forward(self):
-        bufsize = 81920
         while True:
             for client in self.screen_sharing:
                 try:
                     data1 = client[0].recv(5)
-                    imtype, le = struct.unpack(">BI", data1)
-                    if imtype == 2:
-                        print("someone stop screen sharing!")
-                        self.screen_sharing.remove(client)
-                        for other in self.screen_receiving:
-                            try:
-                                if other[1][0] == client[1][0]:
-                                    continue
-                                other[0].sendall(data1)
-                            except socket.error as e:
-                                print(e)
-                                other[0].close()
-                                self.screen_receiving.remove(other)
-                    else:
-                        # data2 = b''
-                        # while le > bufsize:
-                        #     t = client[0].recv(bufsize)
-                        #     data2 += t
-                        #     le -= len(t)
-                        # while le > 0:
-                        #     t = client[0].recv(le)
-                        #     data2 += t
-                        #     le -= len(t)
-                        data2 = client[0].recv(le)
-                        for other in self.screen_receiving:
-                            try:
-                                if other[1][0] == client[1][0]:
-                                    continue
-                                other[0].sendall(data1)
-                                other[0].sendall(data2)
-                            except socket.error as e:
-                                print(e)
-                                other[0].close()
-                                self.screen_receiving.remove(other)
                 except socket.error as e:
                     print(e)
+                    for other in self.screen_receiving:
+                        try:
+                            if other[1][0] == client[1][0]:
+                                continue
+                            other[0].sendall(struct.pack(">BI", 2, 0))
+                        except socket.error as e:
+                            print(e)
+                            other[0].close()
+                            self.screen_receiving.remove(other)
                     client[0].close()
                     self.screen_sharing.remove(client)
+                    break
+                imtype, le = struct.unpack(">BI", data1)
+                if imtype == 2:
+                    print("someone stop screen sharing!")
+                    self.screen_sharing.remove(client)
+                    for other in self.screen_receiving:
+                        try:
+                            if other[1][0] == client[1][0]:
+                                continue
+                            other[0].sendall(data1)
+                        except socket.error as e:
+                            print(e)
+                            other[0].close()
+                            self.screen_receiving.remove(other)
+                else:
+                    # data2 = b''
+                    # while le > bufsize:
+                    #     t = client[0].recv(bufsize)
+                    #     data2 += t
+                    #     le -= len(t)
+                    # while le > 0:
+                    #     t = client[0].recv(le)
+                    #     data2 += t
+                    #     le -= len(t)
+                    try:
+                        data2 = client[0].recv(le)
+                    except socket.error as e:
+                        print(e)
+                        for other in self.screen_receiving:
+                            try:
+                                if other[1][0] == client[1][0]:
+                                    continue
+                                other[0].sendall(struct.pack(">BI", 2, 0))
+                            except socket.error as e:
+                                print(e)
+                                other[0].close()
+                                self.screen_receiving.remove(other)
+                        client[0].close()
+                        self.screen_sharing.remove(client)
+                        break
+                    for other in self.screen_receiving:
+                        try:
+                            if other[1][0] == client[1][0]:
+                                continue
+                            other[0].sendall(data1)
+                            other[0].sendall(data2)
+                        except socket.error as e:
+                            print(e)
+                            other[0].close()
+                            self.screen_receiving.remove(other)
+
 
     def broadcast(self):
         header = b'clients'
