@@ -712,6 +712,7 @@ class CtrlSock(object):
                 break
             except Exception as e:
                 print("Could not connect to the client" + str(self.beCtrlHost))
+                return
         if header == "accept":
             lenb = self.sock.recv(5)
             imtype, le = struct.unpack(">BI", lenb)

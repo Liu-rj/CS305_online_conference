@@ -133,9 +133,14 @@ class Meeting(object):
                         print("someone stop screen sharing!")
                         self.screen_sharing.remove(client)
                         for other in self.screen_receiving:
-                            if other[1][0] == client[1][0]:
-                                continue
-                            other[0].sendall(data1)
+                            try:
+                                if other[1][0] == client[1][0]:
+                                    continue
+                                other[0].sendall(data1)
+                            except socket.error as e:
+                                print(e)
+                                other[0].close()
+                                self.screen_receiving.remove(other)
                     else:
                         data2 = b''
                         while le > bufsize:
@@ -147,12 +152,19 @@ class Meeting(object):
                             data2 += t
                             le -= len(t)
                         for other in self.screen_receiving:
-                            if other[1][0] == client[1][0]:
-                                continue
-                            other[0].sendall(data1)
-                            other[0].sendall(data2)
-                except:
-                    continue
+                            try:
+                                if other[1][0] == client[1][0]:
+                                    continue
+                                other[0].sendall(data1)
+                                other[0].sendall(data2)
+                            except socket.error as e:
+                                print(e)
+                                other[0].close()
+                                self.screen_receiving.remove(other)
+                except socket.error as e:
+                    print(e)
+                    client[0].close()
+                    self.screen_sharing.remove(client)
 
     def broadcast(self):
         header = b'clients'
