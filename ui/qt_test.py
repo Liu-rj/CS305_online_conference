@@ -387,13 +387,13 @@ class Stats():
     # method related to more button
     def handle_more_button(self):
         self.more_window = QMainWindow()
-        self.more_window.setFixedSize(265, 220)
+        self.more_window.setFixedSize(500, 220)
         self.more_window.move((self.resolution.width() / 2) - (self.more_window.frameSize().width() / 2),
                                  (self.resolution.height() / 2) - (self.more_window.frameSize().height() / 2))
         self.more_window.setWindowTitle('Participant list')
         # button for transferring the host
         self.transfer_button = QPushButton(self.more_window)
-        self.transfer_button.resize(120, 50)
+        self.transfer_button.resize(230, 50)
         self.transfer_button.move(10, 170)
         self.transfer_button.setText("Transfer")
         self.transfer_button.setFont(QFont("Times New Roman", 18))
@@ -403,8 +403,8 @@ class Stats():
         self.transfer_button.clicked.connect(self.handle_transfer_button)
         # button for assigning administrator
         self.assign_button = QPushButton(self.more_window)
-        self.assign_button.resize(120, 50)
-        self.assign_button.move(135, 170)
+        self.assign_button.resize(230, 50)
+        self.assign_button.move(260, 170)
         self.assign_button.setText("Assign")
         self.assign_button.setFont(QFont("Times New Roman", 18))
         self.assign_button.setStyleSheet("QToolButton{border:none;color:rgb(0, 0, 0);}"
