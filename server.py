@@ -11,14 +11,14 @@ import threading
     you can create a new file to replace this file.
 '''
 
-
+#receive data from server
 def parse_data(raw_data):
     raw_data = raw_data.split(b'\r\n\r\n')
     header = raw_data[0]
     data = raw_data[1]
     return header, data
 
-
+#Create a socket to handle incoming messages from clients' VedioSocket
 def video_sock_listen():
     print('video socket start listen...')
     video_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -41,7 +41,7 @@ def video_sock_listen():
             else:  # TODO: if join a non-existing room, what should we do?
                 print(f'{address} not pass test, header: {header}, data: {data}, rooms: {ServerSocket.rooms.keys()}')
 
-
+#Create a socket to handle incoming messages from clients' AudioSocket
 def audio_sock_listen():
     print('audio socket start listen...')
     audio_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -64,7 +64,7 @@ def audio_sock_listen():
             else:  # TODO: if join a non-existing room, what should we do?
                 pass
 
-
+#Create a socket to handle incoming messages from clients' ScreenSocket
 def screen_sock_listen():
     print('screen socket start listen...')
     screen_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -83,6 +83,7 @@ def screen_sock_listen():
                         ServerSocket.rooms[room_id].screen_sharing.append((sock, address))
                         sock.send(b'200 OK\r\n\r\n ')
                     else:
+                        sock.send(b'500 Not\r\n\r\n ')
                         print("There is someone sharing screen!")
                 elif header == 'receive':
                     ServerSocket.rooms[room_id].screen_receiving.append((sock, address))
@@ -90,7 +91,7 @@ def screen_sock_listen():
             else:  # TODO: if join a non-existing room, what should we do?
                 pass
 
-
+#The main thread listens for new client to join
 def main_sock_listen():
     print('main socket start listen...')
     video = threading.Thread(target=video_sock_listen)

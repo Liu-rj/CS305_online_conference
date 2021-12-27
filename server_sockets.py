@@ -50,6 +50,7 @@ class Meeting(object):
     def add_service(self, service):
         self.services.append(service)
 
+    #Receive video data from different clients and store it in video buffer
     def video_receive(self, sock):
         data = b''
         payload_size = struct.calcsize("L")
@@ -74,6 +75,7 @@ class Meeting(object):
             # print('remove', sock)
             sock.close()
 
+    #forward vedio data from buffer to clients
     def video_forward(self):
         while True:
             if not self.video_buffer:
@@ -87,6 +89,7 @@ class Meeting(object):
                     other[0].close()
                     self.video_receiving.remove(other)
 
+    #Receive audio data from different clients and store it in audio buffer
     def audio_receive(self, sock, ip):
         data = b''
         payload_size = struct.calcsize("L")
@@ -106,6 +109,7 @@ class Meeting(object):
             # print('remove', sock)
             sock.close()
 
+    #forward audio data from buffer to clients
     def audio_forward(self):
         while True:
             if not self.audio_buffer:
@@ -122,21 +126,45 @@ class Meeting(object):
                     other[0].close()
                     self.audio_receiving.remove(other)
 
+    #Receive a screen share from one client and distribute it to other clients
     def screen_forward(self):
         bufsize = 81920
         while True:
             for client in self.screen_sharing:
                 try:
                     data1 = client[0].recv(5)
-                    imtype, le = struct.unpack(">BI", data1)
-                    if imtype == 2:
-                        print("someone stop screen sharing!")
-                        self.screen_sharing.remove(client)
-                        for other in self.screen_receiving:
+                except socket.error as e:
+                    # Handle exceptions when the sharer terminates the program
+                    print(e)
+                    for other in self.screen_receiving:
+                        try:
+                            if other[1][0] == client[1][0]:
+                                continue
+                            other[0].sendall(struct.pack(">BI", 2, 0))
+                        except socket.error as e:
+                            # Handle exceptions when the receiver terminates the program
+                            print(e)
+                            other[0].close()
+                            self.screen_receiving.remove(other)
+                    client[0].close()
+                    self.screen_sharing.remove(client)
+                    break
+                imtype, le = struct.unpack(">BI", data1)
+                if imtype == 2:
+                    print("someone stop screen sharing!")
+                    self.screen_sharing.remove(client)
+                    for other in self.screen_receiving:
+                        try:
                             if other[1][0] == client[1][0]:
                                 continue
                             other[0].sendall(data1)
-                    else:
+                        except socket.error as e:
+                            # Handle exceptions when the receiver terminates the program
+                            print(e)
+                            other[0].close()
+                            self.screen_receiving.remove(other)
+                else:
+                    try:
                         data2 = b''
                         while le > bufsize:
                             t = client[0].recv(bufsize)
@@ -146,14 +174,35 @@ class Meeting(object):
                             t = client[0].recv(le)
                             data2 += t
                             le -= len(t)
+                    except socket.error as e:
+                        # Handle exceptions when the sharer terminates the program
+                        print(e)
                         for other in self.screen_receiving:
+                            try:
+                                if other[1][0] == client[1][0]:
+                                    continue
+                                other[0].sendall(struct.pack(">BI", 2, 0))
+                            except socket.error as e:
+                                # Handle exceptions when the receiver terminates the program
+                                print(e)
+                                other[0].close()
+                                self.screen_receiving.remove(other)
+                        client[0].close()
+                        self.screen_sharing.remove(client)
+                        break
+                    for other in self.screen_receiving:
+                        try:
                             if other[1][0] == client[1][0]:
                                 continue
                             other[0].sendall(data1)
                             other[0].sendall(data2)
-                except:
-                    continue
+                        except socket.error as e:
+                            # Handle exceptions when the receiver terminates the program
+                            print(e)
+                            other[0].close()
+                            self.screen_receiving.remove(other)
 
+    #Inform all participants of any changes in attendance
     def broadcast(self):
         header = b'clients'
         data = b''
@@ -168,6 +217,7 @@ class Meeting(object):
                 service.client[0].close()
                 self.services.remove(service)
 
+    #Setting Administrator Rights
     def set_privilege(self, msg: bytes, ip: str):
         for service in self.services:
             if service.client[1][0] == ip:
@@ -198,10 +248,11 @@ class ServerSocket(threading.Thread):
         super().__init__()
         self.client: Tuple[socket.socket, Tuple[str, int]] = client
         self.sock: socket.socket = client[0]
-        self.sock.setblocking(False)
+        # self.sock.setblocking(False)
         self.meeting: Union[Meeting, None] = None
 
     def __del__(self):
+        print('enter delete self')
         self.quit_meeting()
         self.sock.close()
 
@@ -212,7 +263,7 @@ class ServerSocket(threading.Thread):
             if not self.meeting.services:
                 del ServerSocket.rooms[self.meeting.room_id]
             self.meeting = None
-        print(self.client[1], 'quit room, room info:', ServerSocket.rooms)
+        # print(self.client[1], 'quit room, room info:', ServerSocket.rooms)
 
     def close_meeting(self):
         if self.meeting:
@@ -226,9 +277,15 @@ class ServerSocket(threading.Thread):
                 header, data, alive = receive_data(self.sock)
                 if not alive:
                     print('end of client', self.client[1])
+                    self.quit_meeting()
+                    self.sock.close()
                     return
             except:
-                continue
+                print('end of client', self.client[1])
+                self.quit_meeting()
+                self.sock.close()
+                return
+            # print(f'{header}, {data}')
             if header == 'join room':
                 room_id = int(data.split(' ')[1])
                 if room_id in self.rooms.keys():
@@ -248,8 +305,10 @@ class ServerSocket(threading.Thread):
                     self.sock.send('200 OK\r\n\r\nroomId {}'.format(str(room_id)).encode())
             elif header == 'quit room':
                 self.quit_meeting()
+                self.sock.send('quit\r\n\r\n '.encode())
             elif header == 'close room':
                 self.close_meeting()
+                self.sock.send('quit\r\n\r\n '.encode())
             elif header == 'set':
                 set_type, ip = data.split(':')
                 msg = (header + '\r\n\r\n' + set_type).encode()

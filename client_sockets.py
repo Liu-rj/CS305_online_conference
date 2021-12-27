@@ -7,7 +7,7 @@ import pickle
 import zlib
 import numpy as np
 import pyaudio
-from PIL import ImageGrab, ImageTk, Image
+from PIL import ImageGrab
 import mouse
 import keyboard
 
@@ -32,12 +32,10 @@ class ClientSocket(object):
 
     def __init__(self, server):
         self.server = server
-        # Create socket
+        # Create socket connecting to server
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.connect()
         self.ip = self.sock.getsockname()[0]
-        # Create a receive_server_data threading
-        # self.receive_thread = threading.Thread(target=self.receive_server_data)
 
     def connect(self):
         # If you want to connect to the server right now
@@ -52,12 +50,14 @@ class ClientSocket(object):
     def close_conn(self):
         self.sock.close()
 
+    #receive data from server
     def receive_server_data(self):
         raw_data = self.sock.recv(2048).decode().split('\r\n\r\n')
         header = raw_data[0]
         data = raw_data[1]
         return header, data
 
+    #send data from server
     def send_data(self, header, data):
         """
             This function is used to send data to the server
@@ -67,19 +67,19 @@ class ClientSocket(object):
         pack = header + b'\r\n\r\n' + data
         self.sock.sendall(pack)
 
-
+#receive data from server
 def parse_data(raw_data):
     raw_data = raw_data.decode().split('\r\n\r\n')
     header = raw_data[0]
     data = raw_data[1]
     return header, data
 
-
+#send data from server
 def send_data(sock, header, data):
     pack = header + b'\r\n\r\n' + data
     sock.sendall(pack)
 
-
+#The socket responsible for video transmission
 class VideoSock(object):
     def __init__(self, server: Tuple[str, int], client):
         self.server = server
@@ -89,7 +89,6 @@ class VideoSock(object):
         self.fx = 1 / (self.interval + 1)
         if self.fx < 0.3:
             self.fx = 0.3
-
         self.sharing = False
         self.receiving = False
 
@@ -114,20 +113,20 @@ class VideoSock(object):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         while True:
             try:
+                #connect to server
                 sock.connect(self.server)
                 raw_data = b''
                 while not raw_data:
                     send_data(sock, b'share', 'roomId {}'.format(str(self.room_id)).encode())
                     raw_data = sock.recv(2048)
-                    # print(raw_data)
                 header, data = parse_data(raw_data)
                 break
             except socket.error as e:
-                # print(e)
                 print("Could not connect to the server" + str(self.server))
         ip_b = sock.getsockname()[0].encode()
         if header == '200 OK':
             print("VIDEO sender starts...")
+            #send the photos taken by the camera to server
             while self.sharing and cap.isOpened():
                 ret, frame = cap.read()
                 sframe = cv2.resize(frame, (0, 0), fx=self.fx, fy=self.fx)
@@ -148,6 +147,7 @@ class VideoSock(object):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         while True:
             try:
+                #connect to server
                 sock.connect(self.server)
                 send_data(sock, b'receive', 'roomId {}'.format(str(self.room_id)).encode())
                 break
@@ -157,6 +157,7 @@ class VideoSock(object):
         print("VIDEO receiver starts...")
         data = b''
         payload_size = struct.calcsize("L")
+        # receive vedio data from server
         while self.receiving:
             while len(data) < payload_size:
                 data += sock.recv(81920)
@@ -183,7 +184,7 @@ class VideoSock(object):
             self.client.video_update_frame(ip, frame)
         sock.close()
 
-
+#The socket responsible for audio transmission
 class AudioSock(object):
     def __init__(self, server):
         self.server = server
@@ -219,6 +220,7 @@ class AudioSock(object):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         while True:
             try:
+                #connect to server
                 sock.connect(self.server)
                 raw_data = b''
                 while not raw_data:
@@ -231,11 +233,13 @@ class AudioSock(object):
                 print("Could not connect to the server" + str(self.server))
         if header == '200 OK':
             print("AUDIO sender starts...")
+            #open audio to input data
             self.in_stream = self.p.open(format=FORMAT,
                                          channels=CHANNELS,
                                          rate=RATE,
                                          input=True,
                                          frames_per_buffer=CHUNK)
+            #send audio data to server
             while self.sharing and self.in_stream.is_active():
                 frames = []
                 for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
@@ -253,6 +257,7 @@ class AudioSock(object):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         while True:
             try:
+                #connect to server
                 sock.connect(self.server)
                 send_data(sock, b'receive', f'roomId {self.room_id}'.encode())
                 break
@@ -262,12 +267,14 @@ class AudioSock(object):
         print("AUDIO receiver starts...")
         data = "".encode("utf-8")
         payload_size = struct.calcsize("L")
+        # open audio to output data
         self.out_stream = self.p.open(format=FORMAT,
                                       channels=CHANNELS,
                                       rate=RATE,
                                       output=True,
                                       frames_per_buffer=CHUNK
                                       )
+        #receive audio data from server
         while self.receiving:
             while len(data) < payload_size:
                 data += sock.recv(81920)
@@ -284,17 +291,19 @@ class AudioSock(object):
         sock.close()
 
 
+# The socket responsible for screen transmission
 class ScreenSock(object):
-    def __init__(self, server):
+    def __init__(self, server,client):
         # self.root = root
         self.server = server
         self.room_id = None
         self.img = None
         self.imbyt = None
-        self.bufsize = 10240  # socket缓冲区大小
+        self.bufsize = 81920  # socket缓冲区大小
         self.IMQUALITY = 50  # 压缩比 1-100 数值越小，压缩比越高，图片质量损失越严重
         self.sharing = False
         self.receiving = False
+        self.owner = client
 
     def __del__(self):
         self.sharing = False
@@ -317,6 +326,7 @@ class ScreenSock(object):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         while True:
             try:
+                #connect to server
                 sock.connect(self.server)
                 raw_data = b''
                 while not raw_data:
@@ -328,6 +338,7 @@ class ScreenSock(object):
                 # print(e)
                 print("Could not connect to the server" + str(self.server))
         if header == '200 OK':
+            # Screen capture and  send pictures to server
             if self.imbyt is None:
                 imorg = np.asarray(ImageGrab.grab())
                 _, self.imbyt = cv2.imencode(".jpg", imorg, [cv2.IMWRITE_JPEG_QUALITY, self.IMQUALITY])
@@ -366,6 +377,8 @@ class ScreenSock(object):
                     sock.sendall(lenb)
                     sock.sendall(self.imbyt)
             sock.sendall(struct.pack(">BI", 2, 0))
+        else:
+            self.owner.stats.client_meeting.deny_multi_signal.emit()
         sock.close()
 
     def receive_screen(self):
@@ -374,6 +387,7 @@ class ScreenSock(object):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         while True:
             try:
+                #connect to server
                 sock.connect(self.server)
                 raw_data = b''
                 while not raw_data:
@@ -384,6 +398,7 @@ class ScreenSock(object):
             except socket.error as e:
                 print("Could not connect to the server" + str(self.server))
         while self.receiving:
+            # Accept images from server and display them in a CV2 window
             lenb = sock.recv(5)
             imtype, le = struct.unpack(">BI", lenb)
             imb = b''
@@ -432,7 +447,7 @@ class ScreenSock(object):
             cv2.destroyWindow('Screen')
         sock.close()
 
-
+# The socket responsible for listening to control signal
 class beCtrlSock(object):
 
     def __init__(self, addr, client):
@@ -457,18 +472,18 @@ class beCtrlSock(object):
         print("beCtrl open")
         self.sock.listen(2)
         while True:
+            #Listen for the control signal, when someone requests control, generate a popover
             self.conn, addr = self.sock.accept()
             self.owner.stats.client_meeting.ctrl_signal.emit(addr[0])
-            # self.stats.handle_control_msg(addr)
-            # self.handle_confirm()
-            # print("accept")
 
+    #confirm beControl
     def handle_confirm(self):
         self.beCtrl = True
         send_data(self.conn, b'accept', (str(self.conn.getsockname()[0])).encode())
         threading.Thread(target=self.handle, args=(self.conn,)).start()
         threading.Thread(target=self.control, args=(self.conn,)).start()
 
+    #refuse beControl
     def handle_cancel(self):
         send_data(self.conn, b'refuse', ("").encode())
         self.conn.close()
@@ -657,13 +672,13 @@ class beCtrlSock(object):
                 return
         conn.close()
 
-
+# The socket responsible for control other
 class CtrlSock(object):
 
     def __init__(self, beCtrlHost, client):
         self.img = None
         self.imbyt = None
-        self.bufsize = 10240  # socket缓冲区大小
+        self.bufsize = 81920  # socket缓冲区大小
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         # hs = beCtrlHost.split(":")
         # if len(hs) == 2:
@@ -699,11 +714,13 @@ class CtrlSock(object):
             elif event == cv2.EVENT_MOUSEMOVE:
                 EventDo(struct.pack('>BBHH', 4, 4, x, y))
 
+        #Bind mouse Events
         cv2.setMouseCallback("Control", mouseEvent)
 
     def startCtrl(self):
         while True:
             try:
+                #Connect the controlled end
                 self.sock.connect(self.beCtrlHost)
                 raw_data = b''
                 while not raw_data:
@@ -712,6 +729,8 @@ class CtrlSock(object):
                 break
             except Exception as e:
                 print("Could not connect to the client" + str(self.beCtrlHost))
+                return
+        #Receives screen photos, listens for keyboard events and sends
         if header == "accept":
             lenb = self.sock.recv(5)
             imtype, le = struct.unpack(">BI", lenb)
