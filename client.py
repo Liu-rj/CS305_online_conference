@@ -7,16 +7,13 @@ from ui.qt_test import Stats
 
 
 class Client(object):
-    """
-        This is a client class.
-        Feel free to define functions that you need here.
-        The client would contain the ClientSocket(or its subclasses)
-    """
 
     def __init__(self):
         super().__init__()
         self.sock = ClientSocket((XXIP, XXPORT))
+        #client ip address
         self.ip = self.sock.ip
+        # sockets listening for video, audio, screen, and beControl signal
         self.video_sock = VideoSock((XXIP, XXVIDEOPORT), self)
         self.audio_sock = AudioSock((XXIP, XXAUDIOPORT))
         self.screen_sock = ScreenSock((XXIP, XXSCREEENPORT))
@@ -24,6 +21,7 @@ class Client(object):
         # self.beCtrlHost = "10.25.10.50:80"
         self.ctrlSock = None
         self.room_id: Union[int, None] = None
+        #Gui
         self.app = QApplication()
         self.stats = Stats(self)
         self.stats.window.show()
@@ -34,6 +32,7 @@ class Client(object):
         self.sock.close_conn()
         del self.video_sock, self.audio_sock, self.screen_sock, self.beCtrlSock
 
+    # update frame of meeting
     def video_update_frame(self, ip, frame):
         self.stats.update_image(ip, frame)
 
@@ -65,6 +64,7 @@ class Client(object):
         self.ctrlSock = CtrlSock((str(beCtrlIp), BECTRLPORT),self)
         self.ctrlSock.run()
 
+    # When creating or joining a meeting, receive audio, video, and screen sharing, open the controlled end, and enable audio sharing
     def setup(self):
         self.video_sock.room_id = self.room_id
         self.audio_sock.room_id = self.room_id
@@ -140,6 +140,7 @@ class Client(object):
             data = f'admin:{ip}'.encode()
             self.sock.send_data(header, data)
 
+    # Transferring host Rights
     def transfer_host(self, ip: str):
         if self.room_id is not None and self.host:
             header = b'set'
