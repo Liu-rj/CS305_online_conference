@@ -293,7 +293,7 @@ class AudioSock(object):
 
 # The socket responsible for screen transmission
 class ScreenSock(object):
-    def __init__(self, server):
+    def __init__(self, server,client):
         # self.root = root
         self.server = server
         self.room_id = None
@@ -303,6 +303,7 @@ class ScreenSock(object):
         self.IMQUALITY = 50  # 压缩比 1-100 数值越小，压缩比越高，图片质量损失越严重
         self.sharing = False
         self.receiving = False
+        self.owner = client
 
     def __del__(self):
         self.sharing = False
@@ -376,6 +377,8 @@ class ScreenSock(object):
                     sock.sendall(lenb)
                     sock.sendall(self.imbyt)
             sock.sendall(struct.pack(">BI", 2, 0))
+        else:
+            self.owner.stats.client_meeting.deny_multi_signal.emit()
         sock.close()
 
     def receive_screen(self):
@@ -470,8 +473,9 @@ class beCtrlSock(object):
         self.sock.listen(2)
         while True:
             #Listen for the control signal, when someone requests control, generate a popover
-            self.conn, addr = self.sock.accept()
-            self.owner.stats.client_meeting.ctrl_signal.emit(addr[0])
+            if self.conn == None:
+                self.conn, addr = self.sock.accept()
+                self.owner.stats.client_meeting.ctrl_signal.emit(addr[0])
 
     #confirm beControl
     def handle_confirm(self):
@@ -668,6 +672,7 @@ class beCtrlSock(object):
                 conn.close()
                 return
         conn.close()
+        self.conn = None
 
 # The socket responsible for control other
 class CtrlSock(object):

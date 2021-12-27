@@ -83,6 +83,7 @@ def screen_sock_listen():
                         ServerSocket.rooms[room_id].screen_sharing.append((sock, address))
                         sock.send(b'200 OK\r\n\r\n ')
                     else:
+                        sock.send(b'500 Not\r\n\r\n ')
                         print("There is someone sharing screen!")
                 elif header == 'receive':
                     ServerSocket.rooms[room_id].screen_receiving.append((sock, address))

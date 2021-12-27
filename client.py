@@ -16,7 +16,7 @@ class Client(object):
         # sockets listening for video, audio, screen, and beControl signal
         self.video_sock = VideoSock((XXIP, XXVIDEOPORT), self)
         self.audio_sock = AudioSock((XXIP, XXAUDIOPORT))
-        self.screen_sock = ScreenSock((XXIP, XXSCREEENPORT))
+        self.screen_sock = ScreenSock((XXIP, XXSCREEENPORT), self)
         self.beCtrlSock = beCtrlSock((self.ip, BECTRLPORT), self)
         # self.beCtrlHost = "10.25.10.50:80"
         self.ctrlSock = None
