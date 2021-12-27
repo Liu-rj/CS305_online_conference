@@ -313,13 +313,13 @@ class Stats():
     def handle_screen_control_button(self):
         # init the list of members that can be controlled
         self.control_window = QMainWindow()
-        self.control_window.setFixedSize(265, 220)
+        self.control_window.setFixedSize(500, 220)
         self.control_window.move((self.resolution.width() / 2) - (self.control_window.frameSize().width() / 2),
                                  (self.resolution.height() / 2) - (self.control_window.frameSize().height() / 2))
         self.control_window.setWindowTitle('Participant list')
         # button for confirming to control this participant
         self.control_confirm_button = QPushButton(self.control_window)
-        self.control_confirm_button.resize(120, 50)
+        self.control_confirm_button.resize(230, 50)
         self.control_confirm_button.move(10, 170)
         self.control_confirm_button.setText("Confirm")
         self.control_confirm_button.setFont(QFont("Times New Roman", 18))
@@ -329,8 +329,8 @@ class Stats():
         self.control_confirm_button.clicked.connect(self.handle_control_confirm)
         # button for cancelling control selection
         self.control_cancel_button = QPushButton(self.control_window)
-        self.control_cancel_button.resize(120, 50)
-        self.control_cancel_button.move(135, 170)
+        self.control_cancel_button.resize(230, 50)
+        self.control_cancel_button.move(260, 170)
         self.control_cancel_button.setText("Cancel")
         self.control_cancel_button.setFont(QFont("Times New Roman", 18))
         self.control_cancel_button.setStyleSheet("QToolButton{border:none;color:rgb(0, 0, 0);}"
@@ -379,7 +379,7 @@ class Stats():
                                          "background-color: yellow;"
                                          "selection-color: yellow;"
                                          "selection-background-color: blue;")
-        self.invite_window.setFixedSize(QSize(300, 50))
+        self.invite_window.setFixedSize(QSize(500, 50))
         self.invite_window.setWindowTitle('Meeting Info')
         self.invite_window.setFont(QFont("Times New Roman", 18))
         self.invite_window.setReadOnly(True)
