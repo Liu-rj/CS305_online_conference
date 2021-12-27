@@ -9,7 +9,9 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QThread
 
 import threading
+
 lock = threading.Lock()
+
 
 class Stats():
     # init main window and two buttons, set the client
@@ -78,6 +80,7 @@ class Stats():
         # self.meeting_window.setWindowTitle('SUSTech Online Meeting')
         self.meeting_window: Union[None, MeetingWindow] = None
         self.client_meeting: Union[None, ClientMeeting] = None
+
     # method related to join button
     def handle_join(self):
         self.join_window = QLineEdit()
@@ -91,6 +94,7 @@ class Stats():
         self.join_window.setFont(QFont("Times New Roman", 18))
         self.join_window.returnPressed.connect(self.on_join)
         self.join_window.show()
+
     # method to init meeting window, including all the buttons
     def init_meeting_window_buttons(self):
         # voice button
@@ -215,6 +219,7 @@ class Stats():
         self.be_control_cancel_button.setStyleSheet("QToolButton{border:none;color:rgb(0, 0, 0);}"
                                                     "QToolButton:hover{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}"
                                                     "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
+
     # start the client
     def start_client_meeting(self, meeting_window):
         self.client_meeting = ClientMeeting(self.client, meeting_window)
@@ -223,6 +228,7 @@ class Stats():
         self.client_meeting.denied_signal.connect(self.to_control_denied)
         self.client_meeting.deny_multi_signal.connect(self.deny_mutli_sharing)
         self.client_meeting.start()
+
     # called when the meeting id is inputted and confirmed
     def on_join(self):
         meeting_id = self.join_window.text()
@@ -252,6 +258,7 @@ class Stats():
             self.start_client_meeting(self.meeting_window)
             self.window.close()
             self.meeting_window.show()
+
     # method related to the create meeting button
     def handle_create(self):
         self.client.create_meeting()
@@ -265,6 +272,7 @@ class Stats():
         self.start_client_meeting(self.meeting_window)
         self.meeting_window.show()
         self.window.close()
+
     # method related to voice button, used for changing voice sharing status
     def handle_voice_button(self):
         if self.voice_button_status == 1:
@@ -279,6 +287,7 @@ class Stats():
             self.voice_button.setText('Mute')
             # start audio sharing
             self.client.audio_sharing()
+
     # method related to video button, used for changing video sharing status
     def handle_video_button(self):
         if self.video_button_status == 1:
@@ -293,6 +302,7 @@ class Stats():
             self.video_button.setText('Close Video')
             # start video sharing
             self.client.video_sharing()
+
     # method related to screen sharing button
     def handle_screen_share_button(self):
         if self.screen_share_button_status == 1:
@@ -307,6 +317,7 @@ class Stats():
             self.screen_share_button.setText('Start Sharing')
             # stop screen sharing
             self.client.stop_screen_sharing()
+
     # method related to screen control button
     def handle_screen_control_button(self):
         # init the list of members that can be controlled
@@ -338,16 +349,19 @@ class Stats():
         self.init_control_list()
         self.control_confirm = False
         self.control_window.show()
+
     # method related to control confirm button
     def handle_control_confirm(self):
         self.control_confirm = True
         self.control_window.close()
         # start control
         self.client.remote_control(self.to_control_ip)
+
     # method related to control cancel button
     def handle_control_cancel(self):
         self.control_confirm = False
         self.control_window.close()
+
     # show the list all the members that can be controlled
     def init_control_list(self):
         n = len(self.client_meeting.clients)
@@ -365,10 +379,12 @@ class Stats():
             cnt = cnt + 1
             self.cs_group.addButton(cs)
         self.cs_group.buttonClicked.connect(self.handle_button_group)
+
     # update the selected user that the current user wants to control
     def handle_button_group(self):
         self.to_control_ip = self.cs_group.checkedButton().text()
         # print(self.cs_group.checkedButton().text())
+
     # method related to invite button
     def handle_invite_button(self):
         self.invite_window = QLineEdit()
@@ -382,12 +398,13 @@ class Stats():
         self.invite_window.setFont(QFont("Times New Roman", 18))
         self.invite_window.setReadOnly(True)
         self.invite_window.show()
+
     # method related to more button
     def handle_more_button(self):
         self.more_window = QMainWindow()
         self.more_window.setFixedSize(500, 220)
         self.more_window.move((self.resolution.width() / 2) - (self.more_window.frameSize().width() / 2),
-                                 (self.resolution.height() / 2) - (self.more_window.frameSize().height() / 2))
+                              (self.resolution.height() / 2) - (self.more_window.frameSize().height() / 2))
         self.more_window.setWindowTitle('Participant list')
         # button for transferring the host
         self.transfer_button = QPushButton(self.more_window)
@@ -396,8 +413,8 @@ class Stats():
         self.transfer_button.setText("Transfer")
         self.transfer_button.setFont(QFont("Times New Roman", 18))
         self.transfer_button.setStyleSheet("QToolButton{border:none;color:rgb(0, 0, 0);}"
-                                                  "QToolButton:hover{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}"
-                                                  "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
+                                           "QToolButton:hover{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}"
+                                           "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
         self.transfer_button.clicked.connect(self.handle_transfer_button)
         # button for assigning administrator
         self.assign_button = QPushButton(self.more_window)
@@ -406,8 +423,8 @@ class Stats():
         self.assign_button.setText("Assign")
         self.assign_button.setFont(QFont("Times New Roman", 18))
         self.assign_button.setStyleSheet("QToolButton{border:none;color:rgb(0, 0, 0);}"
-                                                 "QToolButton:hover{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}"
-                                                 "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
+                                         "QToolButton:hover{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}"
+                                         "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
         self.assign_button.clicked.connect(self.handle_assign_button)
         self.init_more_list()
         self.transfer_button.hide()
@@ -421,6 +438,7 @@ class Stats():
     def handle_assign_button(self):
         self.client.set_admin(self.more_select_ip)
         self.more_window.close()
+
     # show all participants
     def init_more_list(self):
         n = len(self.client_meeting.clients)
@@ -435,6 +453,7 @@ class Stats():
             cnt = cnt + 1
             self.more_cs_group.addButton(cs)
         self.more_cs_group.buttonClicked.connect(self.handle_more_button_group)
+
     # only host and administrator can show these two buttons, but cannot select himself/herself
     def handle_more_button_group(self):
         self.more_select_ip = self.more_cs_group.checkedButton().text()
@@ -443,26 +462,30 @@ class Stats():
                 self.transfer_button.show()
                 self.assign_button.show()
         print(self.more_cs_group.checkedButton().text())
+
     # pop up message when others want to control the current user
     def handle_control_msg(self, ip):
-        self.msg_area.setText('ip' + ip +' wants to control your PC!')
+        self.msg_area.setText('ip' + ip + ' wants to control your PC!')
         self.control_msg_window.show()
+
     # accept control request
     def handle_be_control_confirm(self):
         self.client.beCtrlSock.handle_confirm()
         self.control_msg_window.close()
+
     # deny control request
     def handle_be_control_cancel(self):
         self.client.beCtrlSock.handle_cancel()
         self.control_msg_window.close()
+
     # control denied reply
     def to_control_denied(self, ip):
         self.deny_window = QLineEdit()
         self.deny_window.setText(ip + ' denied your request!')
         self.deny_window.setStyleSheet("color: blue;"
-                                         "background-color: yellow;"
-                                         "selection-color: yellow;"
-                                         "selection-background-color: blue;")
+                                       "background-color: yellow;"
+                                       "selection-color: yellow;"
+                                       "selection-background-color: blue;")
         self.deny_window.setFixedSize(QSize(500, 50))
         self.deny_window.setWindowTitle('Meeting Info')
         self.deny_window.setFont(QFont("Times New Roman", 18))
@@ -474,9 +497,9 @@ class Stats():
         self.deny_multi_sharing_window = QLineEdit()
         self.deny_multi_sharing_window.setText('Someone is screening sharing!')
         self.deny_multi_sharing_window.setStyleSheet("color: blue;"
-                                       "background-color: yellow;"
-                                       "selection-color: yellow;"
-                                       "selection-background-color: blue;")
+                                                     "background-color: yellow;"
+                                                     "selection-color: yellow;"
+                                                     "selection-background-color: blue;")
         self.deny_multi_sharing_window.setFixedSize(QSize(500, 50))
         self.deny_multi_sharing_window.setWindowTitle('Meeting Info')
         self.deny_multi_sharing_window.setFont(QFont("Times New Roman", 18))
@@ -487,6 +510,7 @@ class Stats():
         # stop screen sharing
         # self.client.stop_screen_sharing()
         self.deny_multi_sharing_window.show()
+
     # update the meeting frame when people join or leave the meeting
     def update_all_clients(self):
         clients = self.client_meeting.clients
@@ -510,6 +534,7 @@ class Stats():
             frame.setPixmap(pix)
             frame.show()
             self.all_frames.update({clients[i]: frame})
+
     # set the frame of the user as the default image or the corresponding video
     def update_image(self, ip, frame):
         pix = None
@@ -523,13 +548,16 @@ class Stats():
             pix = QPixmap.fromImage(ImageQt(frame).copy())
         try:
             self.all_frames[ip].setPixmap(pix)
-        except :
+        except:
             pass
+
+
 # main window
 class MainWindow(QMainWindow):
     def __init__(self, client):
         super(MainWindow, self).__init__()
         self.client = client
+
     # overwrite
     def closeEvent(self, event):
         del self.client
@@ -537,6 +565,7 @@ class MainWindow(QMainWindow):
 
     def setClient(self, client):
         self.client = client
+
 
 # meeting window
 class MeetingWindow(QMainWindow):
@@ -549,12 +578,13 @@ class MeetingWindow(QMainWindow):
         self.cancel: Union[True, False] = False
         self.forced: Union[True, False] = False
         self.again_exit: Union[True, False] = False
+
     # init exit event for host or administrator, including end, leave and cancel button
     def init_super_exit(self):
         self.exit_window = QMainWindow()
         self.exit_window.setFixedSize(740, 70)
         self.exit_window.move((self.resolution.width() / 2) - (self.exit_window.frameSize().width() / 2),
-                                 (self.resolution.height() / 2) - (self.exit_window.frameSize().height() / 2))
+                              (self.resolution.height() / 2) - (self.exit_window.frameSize().height() / 2))
         self.exit_window.setWindowTitle('Exit Window')
         self.end_button = QPushButton(self.exit_window)
         self.end_button.resize(250, 50)
@@ -562,8 +592,8 @@ class MeetingWindow(QMainWindow):
         self.end_button.setText("End Meeting")
         self.end_button.setFont(QFont("Times New Roman", 18))
         self.end_button.setStyleSheet("QToolButton{border:none;color:rgb(0, 0, 0);}"
-                                                  "QToolButton:hover{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}"
-                                                  "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
+                                      "QToolButton:hover{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}"
+                                      "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
         self.end_button.clicked.connect(self.handle_end)
         self.leave_button = QPushButton(self.exit_window)
         self.leave_button.resize(250, 50)
@@ -571,8 +601,8 @@ class MeetingWindow(QMainWindow):
         self.leave_button.setText("Leave Meeting")
         self.leave_button.setFont(QFont("Times New Roman", 18))
         self.leave_button.setStyleSheet("QToolButton{border:none;color:rgb(0, 0, 0);}"
-                                                  "QToolButton:hover{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}"
-                                                  "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
+                                        "QToolButton:hover{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}"
+                                        "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
         self.leave_button.clicked.connect(self.handle_leave)
         self.exit_cancel_button = QPushButton(self.exit_window)
         self.exit_cancel_button.resize(200, 50)
@@ -580,9 +610,10 @@ class MeetingWindow(QMainWindow):
         self.exit_cancel_button.setText("Cancel")
         self.exit_cancel_button.setFont(QFont("Times New Roman", 18))
         self.exit_cancel_button.setStyleSheet("QToolButton{border:none;color:rgb(0, 0, 0);}"
-                                                 "QToolButton:hover{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}"
-                                                 "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
+                                              "QToolButton:hover{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}"
+                                              "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
         self.exit_cancel_button.clicked.connect(self.handle_cancel)
+
     # init exit event for normal users, including leave and cancel button
     def init_normal_exit(self):
         self.exit_window = QMainWindow()
@@ -608,6 +639,7 @@ class MeetingWindow(QMainWindow):
                                               "QToolButton:hover{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}"
                                               "QToolButton:checked{background-color: rgb(20, 62, 134);border:none;color:rgb(255, 255, 255);}")
         self.exit_cancel_button.clicked.connect(self.handle_cancel)
+
     # method related to leave button
     def handle_leave(self):
         self.exit = True
@@ -615,6 +647,7 @@ class MeetingWindow(QMainWindow):
         self.exit_window.close()
         self.again_exit = True
         self.close()
+
     # method related to end button
     def handle_end(self):
         self.exit = True
@@ -622,15 +655,18 @@ class MeetingWindow(QMainWindow):
         self.exit_window.close()
         self.again_exit = True
         self.close()
+
     # method related to cancel button
     def handle_cancel(self):
         self.cancel = True
         self.exit_window.close()
+
     # forced to quit when the host or administrator end the meeting
     def force_quit(self):
         self.forced = True
         self.exit = True
         self.close()
+
     # overwrite to handle close meeting window event
     def closeEvent(self, event):
         # host and administrator init_super_exit(), others init_normal_exit()
@@ -650,6 +686,7 @@ class MeetingWindow(QMainWindow):
             event.accept()
         else:
             event.ignore()
+
 
 # to start client
 class ClientMeeting(QThread):

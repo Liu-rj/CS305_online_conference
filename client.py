@@ -78,7 +78,7 @@ class Client(object):
         data = b' '
         self.sock.send_data(header, data)
         header, data = self.sock.receive_server_data()
-        if header == 'close':
+        if header == 'quit':
             header, data = self.sock.receive_server_data()
         if header == '200 OK':
             reply_header = b'200 OK'
@@ -96,7 +96,7 @@ class Client(object):
         data = b'roomId ' + str(rid).encode()
         self.sock.send_data(header, data)
         header, data = self.sock.receive_server_data()
-        if header == 'close':
+        if header == 'quit':
             header, data = self.sock.receive_server_data()
         if header == '200 OK':
             reply_header = b'200 OK'
