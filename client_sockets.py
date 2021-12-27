@@ -7,7 +7,7 @@ import pickle
 import zlib
 import numpy as np
 import pyaudio
-from PIL import ImageGrab, ImageTk, Image
+from PIL import ImageGrab
 import mouse
 import keyboard
 
@@ -473,9 +473,8 @@ class beCtrlSock(object):
         self.sock.listen(2)
         while True:
             #Listen for the control signal, when someone requests control, generate a popover
-            if self.conn == None:
-                self.conn, addr = self.sock.accept()
-                self.owner.stats.client_meeting.ctrl_signal.emit(addr[0])
+            self.conn, addr = self.sock.accept()
+            self.owner.stats.client_meeting.ctrl_signal.emit(addr[0])
 
     #confirm beControl
     def handle_confirm(self):
@@ -672,7 +671,6 @@ class beCtrlSock(object):
                 conn.close()
                 return
         conn.close()
-        self.conn = None
 
 # The socket responsible for control other
 class CtrlSock(object):

@@ -1,5 +1,3 @@
-import threading
-from typing import Union, List
 from CONSTANTS import *
 from client_sockets import *
 from PySide2.QtWidgets import *

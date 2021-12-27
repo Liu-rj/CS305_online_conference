@@ -1,4 +1,3 @@
-import time
 from typing import List, Union
 import cv2
 from PySide2.QtWidgets import *
@@ -8,7 +7,6 @@ from PIL.ImageQt import ImageQt
 from PIL import Image
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import QThread
-from PyQt5 import QtWidgets
 
 import threading
 lock = threading.Lock()
