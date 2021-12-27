@@ -223,6 +223,7 @@ class Stats():
         self.client_meeting.client_signal.connect(self.update_all_clients)
         self.client_meeting.ctrl_signal.connect(self.handle_control_msg)
         self.client_meeting.denied_signal.connect(self.to_control_denied)
+        self.client_meeting.deny_multi_signal.connect(self.deny_mutli_sharing())
         self.client_meeting.start()
     # called when the meeting id is inputted and confirmed
     def on_join(self):
@@ -469,6 +470,20 @@ class Stats():
         self.deny_window.setFont(QFont("Times New Roman", 18))
         self.deny_window.setEnabled(False)
         self.deny_window.show()
+
+    # deny multiple sharing reply
+    def deny_mutli_sharing(self):
+        self.deny_multi_sharing_window = QLineEdit()
+        self.deny_multi_sharing_window.setText('Someone is screening sharing!')
+        self.deny_multi_sharing_window.setStyleSheet("color: blue;"
+                                       "background-color: yellow;"
+                                       "selection-color: yellow;"
+                                       "selection-background-color: blue;")
+        self.deny_multi_sharing_window.setFixedSize(QSize(500, 50))
+        self.deny_multi_sharing_window.setWindowTitle('Meeting Info')
+        self.deny_multi_sharing_window.setFont(QFont("Times New Roman", 18))
+        self.deny_multi_sharing_window.setEnabled(False)
+        self.deny_multi_sharing_window.show()
     # update the meeting frame when people join or leave the meeting
     def update_all_clients(self):
         clients = self.client_meeting.clients
@@ -641,6 +656,8 @@ class ClientMeeting(QThread):
     ctrl_signal = pyqtSignal(str)
     # a signal for pop up window when others deny control requests
     denied_signal = pyqtSignal(str)
+    # a signal for pop up window when multiple clients want to control one client
+    deny_multi_signal = pyqtSignal()
 
     def __init__(self, client, meeting_window):
         super().__init__()
